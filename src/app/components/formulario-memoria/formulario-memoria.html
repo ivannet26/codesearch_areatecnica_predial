@@ -1,0 +1,1437 @@
+<div class="form-wrapper">
+  <div class="form-header">
+    <div class="form-header__title">
+      <div class="form-header__titulo">
+        <button class="form-header__return" (click)="return()">&larr;</button>
+        <span class="form-header__doc">MEMORIA DESCRIPTIVA DEL EXPEDIENTE TÉCNICO LEGAL</span>
+      </div>
+      <div class="form-header__options">
+        <div class="form-header__codigo">
+          <label>CÓDIGO</label>
+          <input [(ngModel)]="memoria.codigo" placeholder="AF-JA-000" class="input-codigo" [readonly]="!isEditing" />
+        </div>
+
+        <div class="form-nav-bar">
+          <div class="nav-bar__pager">
+            <button class="nav-pag-btn" title="Primero" [disabled]="!puedeAnterior()"
+              (click)="irPrimerPredio()">«</button>
+            <button class="nav-pag-btn" title="Anterior" [disabled]="!puedeAnterior()"
+              (click)="irAnteriorPredio()">‹</button>
+            <span class="nav-bar__indicator">
+              @if (totalPredios() === 0) { Sin predios cargados }
+              @else if (indicePredioActual() < 0) { — de {{ totalPredios() }} } @else { Predio {{ indicePredioActual() +
+                1 }} de {{ totalPredios() }} } </span>
+                <button class="nav-pag-btn" title="Siguiente" [disabled]="!puedeSiguiente()"
+                  (click)="irSiguientePredio()">›</button>
+                <button class="nav-pag-btn" title="Último" [disabled]="!puedeSiguiente()"
+                  (click)="irUltimoPredio()">»</button>
+          </div>
+          <span class="nav-bar__hint">Selecciona o navega</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-tabs">
+    @for (s of secciones; track s.num) {
+    @if (isEditing || esVisible('tab_sec_' + s.num, true)) {
+    <button class="form-tab" [class.form-tab--active]="seccionActiva === s.num"
+      [class.is-hidden-edit]="isEditing && !esVisible('tab_sec_' + s.num, true)" (click)="irA(s.num)">
+      <span class="form-tab__num">{{ s.num }}</span>
+      <span class="form-tab__label">{{ s.titulo }}</span>
+      @if (isEditing) {
+      <span class="btn-vis btn-vis--tab" title="Mostrar/Ocultar Sección Completa"
+        (click)="$event.stopPropagation(); toggleVisibilidad('tab_sec_' + s.num, true)">
+        {{ getIcono('tab_sec_' + s.num, true) }}
+      </span>
+      }
+    </button>
+    }
+    }
+  </div>
+
+  <div class="form-body">
+    @if (isEditing || esVisible('f_proyecto', memoria.proyecto)) {
+    <div class="campo campo--full" [class.is-hidden-edit]="isEditing && !esVisible('f_proyecto', memoria.proyecto)"
+      style="margin-bottom: 1.5rem;">
+      <label>
+        PROYECTO
+        @if(isEditing){<button type="button" tabindex="-1" class="btn-vis"
+          (click)="toggleVisibilidad('f_proyecto', memoria.proyecto)">{{getIcono('f_proyecto',
+          memoria.proyecto)}}</button>}
+      </label>
+      <input [(ngModel)]="memoria.proyecto" placeholder="ESTUDIO DEFINITIVO DEL PROYECTO..." [readonly]="!isEditing"
+        style="font-weight: 800;" />
+    </div>
+    }
+
+    @if (seccionActiva === 1) {
+    <div class="seccion">
+      @if(isEditing || esVisible('tit_sec1', true)) {
+      <div class="seccion__titulo" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec1', true)">
+        1. CONDICIÓN LEGAL
+        @if(isEditing){<button type="button" class="btn-vis"
+          (click)="toggleVisibilidad('tit_sec1', true)">{{getIcono('tit_sec1', true)}}</button>}
+      </div>
+      }
+
+      @if(isEditing || esVisible('f_condJuridica', memoria.condicionJuridica)) {
+      <div class="campo" [class.is-hidden-edit]="isEditing && !esVisible('f_condJuridica', memoria.condicionJuridica)"
+        style="margin-bottom: 1.5rem;">
+        <label>CONDICIÓN JURÍDICA @if(isEditing){<button type="button" tabindex="-1" class="btn-vis"
+            (click)="toggleVisibilidad('f_condJuridica', memoria.condicionJuridica)">{{getIcono('f_condJuridica',
+            memoria.condicionJuridica)}}</button>}</label>
+        <input [(ngModel)]="memoria.condicionJuridica" [readonly]="!isEditing" />
+      </div>
+      }
+
+      @if(isEditing || esVisible('sub_sujetosPasivos', memoria.titulares[0]?.nombre)) {
+      <div class="seccion__subtitulo"
+        [class.is-hidden-edit]="isEditing && !esVisible('sub_sujetosPasivos', memoria.titulares[0]?.nombre)">
+        IDENTIFICACIÓN DE SUJETOS PASIVOS (TITULARES)
+        @if(isEditing){<button type="button" class="btn-vis"
+          (click)="toggleVisibilidad('sub_sujetosPasivos', memoria.titulares[0]?.nombre)">
+          {{getIcono('sub_sujetosPasivos', memoria.titulares[0]?.nombre)}}
+        </button>}
+      </div>
+      }
+
+      @for (titular of memoria.titulares; track $index; let i = $index) {
+      @if(isEditing || esVisible('blk_titular_' + i, titular.nombre)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_titular_' + i, titular.nombre)" style="background: var(--c-surface); border: 1px solid var(--c-border);
+           border-radius: var(--radius-md); padding: 1.2rem; margin-bottom: 1rem;">
+        <h4 style="margin: 0 0 1rem 0; font-size: 0.85rem; color: var(--c-orange);
+               text-transform: uppercase; display: flex; justify-content: space-between; align-items: center;">
+          TITULAR {{ i + 1 }}
+          @if(isEditing) {
+          <span style="display:flex; gap:0.5rem; align-items:center;">
+            <button type="button" class="btn-vis" (click)="toggleVisibilidad('blk_titular_' + i, titular.nombre)">
+              {{getIcono('blk_titular_' + i, titular.nombre)}}
+            </button>
+            @if (memoria.titulares.length > 1) {
+            <button type="button" class="btn-delete" (click)="eliminarTitular(i)" title="Eliminar titular">✖</button>
+            }
+          </span>
+          }
+        </h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 1.5rem;">
+          <div class="campo" style="flex: 2; min-width: 250px;">
+            <label>NOMBRE COMPLETO</label>
+            <input [(ngModel)]="titular.nombre" [readonly]="!isEditing" />
+          </div>
+          <div class="campo" style="flex: 1; min-width: 140px;">
+            <label>DNI / RUC</label>
+            <input [(ngModel)]="titular.dniRuc" placeholder="00000000" [readonly]="!isEditing" />
+          </div>
+          <div class="campo" style="flex: 1; min-width: 140px;">
+            <label>ESTADO CIVIL</label>
+            <input [(ngModel)]="titular.estadoCivil" [readonly]="!isEditing" />
+          </div>
+        </div>
+      </div>
+      }
+      }
+
+      @if (isEditing) {
+      <button class="btn btn--outline btn--add" (click)="agregarTitular()" style="margin-bottom: 1rem;">
+        + Agregar Titular
+      </button>
+      }
+
+      @if(isEditing || esVisible('blk_docsTit', memoria.partidaRegistral)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_docsTit', memoria.partidaRegistral)">
+        <div class="seccion__subtitulo">
+          DOCUMENTO QUE ACREDITA TITULARIDAD DEL PREDIO
+          @if(isEditing){<button type="button" class="btn-vis"
+            (click)="toggleVisibilidad('blk_docsTit', memoria.partidaRegistral)">{{getIcono('blk_docsTit',
+            memoria.partidaRegistral)}}</button>}
+        </div>
+        <div class="grid grid--3">
+          <div class="campo"><label>PARTIDA REGISTRAL N°</label><input [(ngModel)]="memoria.partidaRegistral"
+              [readonly]="!isEditing" /></div>
+          <div class="campo"><label>FECHA DE EMISIÓN</label><input [(ngModel)]="memoria.fechaEmision" type="date"
+              [readonly]="!isEditing" /></div>
+          <div class="campo"><label>ENTIDAD</label><input [(ngModel)]="memoria.entidad" [readonly]="!isEditing" /></div>
+        </div>
+      </div>
+      }
+    </div>
+    }
+
+    @if (seccionActiva === 2) {
+    <div class="seccion">
+      @if(isEditing || esVisible('tit_sec2', true)) {
+      <div class="seccion__titulo" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec2', true)">
+        2. DATOS DEL SOLICITANTE
+        @if(isEditing){<button type="button" class="btn-vis"
+          (click)="toggleVisibilidad('tit_sec2', true)">{{getIcono('tit_sec2', true)}}</button>}
+      </div>
+      }
+      @if(isEditing || esVisible('f_entSolicitante', memoria.entidadSolicitante)) {
+      <div class="campo campo--full"
+        [class.is-hidden-edit]="isEditing && !esVisible('f_entSolicitante', memoria.entidadSolicitante)">
+        <label>ENTIDAD @if(isEditing){<button type="button" tabindex="-1" class="btn-vis"
+            (click)="toggleVisibilidad('f_entSolicitante', memoria.entidadSolicitante)">{{getIcono('f_entSolicitante',
+            memoria.entidadSolicitante)}}</button>}</label>
+        <input [(ngModel)]="memoria.entidadSolicitante" [readonly]="!isEditing" />
+      </div>
+      }
+    </div>
+    }
+
+    @if (seccionActiva === 3) {
+    <div class="seccion">
+      @if(isEditing || esVisible('tit_sec3', true)) {
+      <div class="seccion__titulo" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec3', true)">
+        3. DATOS GENERALES DEL PREDIO
+        @if(isEditing){<button type="button" class="btn-vis"
+          (click)="toggleVisibilidad('tit_sec3', true)">{{getIcono('tit_sec3', true)}}</button>}
+      </div>
+      }
+
+      @if(isEditing || esVisible('blk_datosGen', true)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_datosGen', true)">
+        @if(isEditing){ <div style="text-align:right; margin-bottom: 0.5rem;"><button type="button" class="btn-vis"
+            (click)="toggleVisibilidad('blk_datosGen', true)">{{getIcono('blk_datosGen', true)}} Ocultar Grupo</button>
+        </div> }
+        <div class="grid grid--4">
+          <div class="campo"><label>PROGRESIVA INICIO (km)</label><input [(ngModel)]="memoria.progresivaInicio"
+              [readonly]="!isEditing" /></div>
+          <div class="campo"><label>PROGRESIVA FINAL (km)</label><input [(ngModel)]="memoria.progresivaFinal"
+              [readonly]="!isEditing" /></div>
+          <div class="campo"><label>LADO</label><input [(ngModel)]="memoria.lado" [readonly]="!isEditing" /></div>
+          <div class="campo"><label>TIPO DE AFECTACIÓN</label><input [(ngModel)]="memoria.tipo"
+              [readonly]="!isEditing" /></div>
+        </div>
+        <div class="grid grid--3">
+          <div class="campo"><label>ZONIFICACIÓN</label><input [(ngModel)]="memoria.zonificacion"
+              [readonly]="!isEditing" /></div>
+          <div class="campo"><label>USO ACTUAL</label><input [(ngModel)]="memoria.usoActual" [readonly]="!isEditing" />
+          </div>
+          <div class="campo"><label>TIPO DE POLÍGONO</label><input [(ngModel)]="memoria.tipoPoligono"
+              [readonly]="!isEditing" /></div>
+        </div>
+      </div>
+      }
+
+      @if(isEditing || esVisible('blk_ubicacion', true)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_ubicacion', true)">
+        <div class="seccion__subtitulo">UBICACIÓN @if(isEditing){<button type="button" class="btn-vis"
+            (click)="toggleVisibilidad('blk_ubicacion', true)">{{getIcono('blk_ubicacion', true)}}</button>}</div>
+        <div class="grid grid--2">
+          <div class="campo"><label>UNIDAD CATASTRAL</label><input [(ngModel)]="memoria.unidadCatastral"
+              [readonly]="!isEditing" /></div>
+          <div class="campo"><label>DENOMINACIÓN</label><input [(ngModel)]="memoria.denominacion"
+              [readonly]="!isEditing" /></div>
+          <div class="campo"><label>SECTOR 1</label><input [(ngModel)]="memoria.sector1" [readonly]="!isEditing" />
+          </div>
+          @if (isEditing || memoria.sector2) { <div class="campo"><label>SECTOR 2</label><input
+              [(ngModel)]="memoria.sector2" [readonly]="!isEditing" /></div> }
+          @if (isEditing || memoria.sector3) { <div class="campo"><label>SECTOR 3</label><input
+              [(ngModel)]="memoria.sector3" [readonly]="!isEditing" /></div> }
+          @if (isEditing || memoria.sector4) { <div class="campo"><label>SECTOR 4</label><input
+              [(ngModel)]="memoria.sector4" [readonly]="!isEditing" /></div> }
+          <div class="campo"><label>DISTRITO</label><input [(ngModel)]="memoria.distrito" [readonly]="!isEditing" />
+          </div>
+          <div class="campo"><label>PROVINCIA</label><input [(ngModel)]="memoria.provincia" [readonly]="!isEditing" />
+          </div>
+          <div class="campo"><label>DEPARTAMENTO</label><input [(ngModel)]="memoria.departamento"
+              [readonly]="!isEditing" /></div>
+          <div class="campo"><label>REFERENCIA (*)</label><input [(ngModel)]="memoria.referencia"
+              [readonly]="!isEditing" /></div>
+          <div class="campo"><label>VÍA</label><input [(ngModel)]="memoria.via" [readonly]="!isEditing" /></div>
+          <div class="campo"><label>MANZANA</label><input [(ngModel)]="memoria.manzana" [readonly]="!isEditing" /></div>
+          <div class="campo"><label>LOTE</label><input [(ngModel)]="memoria.lote" [readonly]="!isEditing" /></div>
+        </div>
+      </div>
+      }
+    </div>
+    }
+
+    @if (seccionActiva === 4) {
+    <div class="seccion">
+      @if(isEditing || esVisible('tit_sec4', true)) {
+      <div class="seccion__titulo" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec4', true)">
+        4. DESCRIPCIÓN DEL PREDIO (MATRIZ)
+        @if(isEditing){<button type="button" class="btn-vis"
+          (click)="toggleVisibilidad('tit_sec4', true)">{{getIcono('tit_sec4', true)}}</button>}
+      </div>
+      }
+
+      @if(isEditing || esVisible('blk_4_1', memoria.areaMatrizM2)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_4_1', memoria.areaMatrizM2)">
+        <div class="seccion__subtitulo">4.1 ÁREA DEL PREDIO Y TOLERANCIAS @if(isEditing){<button type="button"
+            class="btn-vis" (click)="toggleVisibilidad('blk_4_1', memoria.areaMatrizM2)">{{getIcono('blk_4_1',
+            memoria.areaMatrizM2)}}</button>}</div>
+        <div class="grid grid--2">
+          <div class="campo">
+            <label>ÁREA MATRIZ (m²)</label>
+            <input type="number" [(ngModel)]="memoria.areaMatrizM2" [readonly]="!isEditing" />
+          </div>
+          <div class="campo">
+            <label>ÁREA TOTAL (m²)</label>
+            <input type="number" [(ngModel)]="memoria.areaTotalPredioM2" [readonly]="!isEditing" />
+          </div>
+          <div class="campo">
+            <label>TOLERANCIA CATASTRAL (% MÁXIMA)</label>
+            <input [(ngModel)]="memoria.toleranciaMaxima" [readonly]="!isEditing" />
+          </div>
+        </div>
+      </div>
+      }
+
+      @if(isEditing || esVisible('blk_4_2', memoria.colindanciaNorte)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_4_2', memoria.colindanciaNorte)">
+        <div class="seccion__subtitulo">4.2 COLINDANCIAS Y LINDEROS DEL PREDIO (MATRIZ) @if(isEditing){<button
+            type="button" class="btn-vis"
+            (click)="toggleVisibilidad('blk_4_2', memoria.colindanciaNorte)">{{getIcono('blk_4_2',
+            memoria.colindanciaNorte)}}</button>}</div>
+        @if (isEditing) {
+        <div class="actions-coord">
+          <label class="btn btn--upload-coord" [class.is-loading]="cargando.colindanciasMatriz">
+            <span class="upload-spinner" *ngIf="cargando.colindanciasMatriz"></span>
+            <span>{{ cargando.colindanciasMatriz ? 'Cargando...' : '🔍 Extraer Tablas' }}</span>
+            <input type="file" accept=".csv,.xlsx,.xls" (change)="cargarColindancias($event)"
+              (click)="$any($event.target).value = null" hidden>
+          </label>
+        </div>
+        }
+        <table class="tabla-colind">
+          <thead>
+            <tr>
+              <th>LÍMITE</th>
+              <th>COLINDANCIA</th>
+              <th>LONGITUD (m)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="td-limite">NORTE</td>
+              <td><input [(ngModel)]="memoria.colindanciaNorte" class="input-full" [readonly]="!isEditing" /></td>
+              <td><input type="number" [(ngModel)]="memoria.longitudNorte" class="input-num" [readonly]="!isEditing" />
+              </td>
+            </tr>
+            <tr>
+              <td class="td-limite">SUR</td>
+              <td><input [(ngModel)]="memoria.colindanciaSur" class="input-full" [readonly]="!isEditing" /></td>
+              <td><input type="number" [(ngModel)]="memoria.longitudSur" class="input-num" [readonly]="!isEditing" />
+              </td>
+            </tr>
+            <tr>
+              <td class="td-limite">ESTE</td>
+              <td><input [(ngModel)]="memoria.colindanciaEste" class="input-full" [readonly]="!isEditing" /></td>
+              <td><input type="number" [(ngModel)]="memoria.longitudEste" class="input-num" [readonly]="!isEditing" />
+              </td>
+            </tr>
+            <tr>
+              <td class="td-limite">OESTE</td>
+              <td><input [(ngModel)]="memoria.colindanciaOeste" class="input-full" [readonly]="!isEditing" /></td>
+              <td><input type="number" [(ngModel)]="memoria.longitudOeste" class="input-num" [readonly]="!isEditing" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      }
+
+      @if(isEditing || esVisible('blk_4_3', memoria.coordenadas)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_4_3', memoria.coordenadas)">
+        <div class="seccion__subtitulo">4.3 CUADRO DE COORDENADAS DEL PREDIO WGS84 @if(isEditing){<button type="button"
+            class="btn-vis" (click)="toggleVisibilidad('blk_4_3', memoria.coordenadas)">{{getIcono('blk_4_3',
+            memoria.coordenadas)}}</button>}</div>
+        @if (isEditing) {
+        <div class="actions-coord">
+          <button class="btn btn--outline btn--add" (click)="agregarCoordenada()">+ Agregar Vértice</button>
+          <label class="btn btn--upload-coord" [class.is-loading]="cargando.coordenadasMatriz">
+            <span class="upload-spinner" *ngIf="cargando.coordenadasMatriz"></span>
+            <span>{{ cargando.coordenadasMatriz ? 'Cargando...' : '🔍 Extraer Tablas' }}</span>
+            <input type="file" accept=".csv,.xlsx,.xls" (change)="cargarDatosDesdeArchivo($event, 'matriz')" hidden>
+          </label>
+        </div>
+        }
+        <div class="table-scroll">
+          <table class="tabla-colind">
+            <thead>
+              <tr>
+                <th>VÉRTICE</th>
+                <th>LADO</th>
+                <th>DISTANCIA</th>
+                <th>ÁNG. INTERNO</th>
+                <th>ESTE (X)</th>
+                <th>NORTE (Y)</th>@if (isEditing) { <th>ACCIÓN</th> }
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of memoria.coordenadas; track $index; let i = $index) {
+              <tr>
+                <td class="td-limite"><input type="number" [(ngModel)]="c.vertice" style="width:50px"
+                    [readonly]="!isEditing" /></td>
+                <td><input [(ngModel)]="c.lado" class="input-full" [readonly]="!isEditing" /></td>
+                <td><input type="number" [(ngModel)]="c.distancia" class="input-num" [readonly]="!isEditing" /></td>
+                <td><input [(ngModel)]="c.angulo" class="input-full" [readonly]="!isEditing" /></td>
+                <td><input type="number" [(ngModel)]="c.esteX" class="input-num" [readonly]="!isEditing" /></td>
+                <td><input type="number" [(ngModel)]="c.norteY" class="input-num" [readonly]="!isEditing" /></td>
+                @if (isEditing) { <td><button (click)="eliminarCoordenada(i)" class="btn-delete">✖</button></td> }
+              </tr>
+              }
+              @if (memoria.coordenadas.length === 0) {
+              <tr>
+                <td [attr.colspan]="isEditing ? 7 : 6" class="empty-row">Sin vértices. Activa edición para agregar.</td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+      }
+    </div>
+    }
+
+    @if (seccionActiva === 5) {
+    <div class="seccion">
+      @if(isEditing || esVisible('tit_sec5', true)) {
+      <div class="seccion__titulo" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec5', true)">
+        5. DESCRIPCIÓN DEL ENTORNO
+        @if(isEditing){<button type="button" class="btn-vis"
+          (click)="toggleVisibilidad('tit_sec5', true)">{{getIcono('tit_sec5', true)}}</button>}
+      </div>
+      }
+
+      @if(isEditing || esVisible('blk_entorno', true)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_entorno', true)">
+        <div class="seccion__subtitulo">PREDIO URBANO / RURAL @if(isEditing){<button type="button" class="btn-vis"
+            (click)="toggleVisibilidad('blk_entorno', true)">{{getIcono('blk_entorno', true)}}</button>}</div>
+        <div class="grid grid--2">
+          <div class="campo"><label>USO ACTUAL</label><input [(ngModel)]="memoria.usoActualEntorno"
+              [readonly]="!isEditing" /></div>
+          <div class="campo"><label>TOPOGRAFÍA</label><input [(ngModel)]="memoria.topografia" [readonly]="!isEditing" />
+          </div>
+          <div class="campo"><label>PENDIENTE</label><input [(ngModel)]="memoria.pendiente" [readonly]="!isEditing" />
+          </div>
+          <div class="campo"><label>ACCESIBILIDAD</label><input [(ngModel)]="memoria.accesibilidad"
+              [readonly]="!isEditing" /></div>
+          <div class="campo"><label>TIPO DE CULTIVOS PREDOMINANTES</label><input [(ngModel)]="memoria.tipoCultivos"
+              [readonly]="!isEditing" /></div>
+          <div class="campo"><label>TIPO DE RIEGO</label><input [(ngModel)]="memoria.tipoRiego"
+              [readonly]="!isEditing" /></div>
+          <div class="campo"><label>CLIMA</label><input [(ngModel)]="memoria.clima" [readonly]="!isEditing" /></div>
+          <div class="campo"><label>INFRAESTRUCTURA DE RIEGO</label><input [(ngModel)]="memoria.infraestructuraRiego"
+              [readonly]="!isEditing" /></div>
+        </div>
+      </div>
+      }
+    </div>
+    }
+
+    @if (seccionActiva === 6) {
+    <div class="seccion">
+      @if(isEditing || esVisible('tit_sec6', true)) {
+      <div class="seccion__titulo" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec6', true)">
+        6. DESCRIPCIÓN DEL TERRENO AFECTADO
+        @if(isEditing){<button type="button" class="btn-vis"
+          (click)="toggleVisibilidad('tit_sec6', true)">{{getIcono('tit_sec6', true)}}</button>}
+      </div>
+      }
+
+      @if(isEditing || esVisible('blk_6_1', memoria.areaAfectadaTotalM2)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_6_1', memoria.areaAfectadaTotalM2)">
+        <div class="seccion__subtitulo">6.1 ÁREA DEL TERRENO AFECTADO @if(isEditing){<button type="button"
+            class="btn-vis" (click)="toggleVisibilidad('blk_6_1', memoria.areaAfectadaTotalM2)">{{getIcono('blk_6_1',
+            memoria.areaAfectadaTotalM2)}}</button>}</div>
+        <table class="tabla-colind tabla-colind--sm">
+          <thead>
+            <tr>
+              <th>DESCRIPCIÓN</th>
+              <th>UND</th>
+              <th>ÁREA</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>ÁREA TOTAL DEL PREDIO (MATRIZ)</td>
+              <td>m²</td>
+              <td><input type="number" [(ngModel)]="memoria.areaTotalPredioM2" class="input-num"
+                  [readonly]="!isEditing" /></td>
+            </tr>
+            <tr>
+              <td>Afectación Directa</td>
+              <td>m²</td>
+              <td><input type="number" [(ngModel)]="memoria.areaAfectadaDirectaM2" class="input-num"
+                  [readonly]="!isEditing" /></td>
+            </tr>
+            <tr>
+              <td>Afectación Indirecta</td>
+              <td>m²</td>
+              <td><input type="number" [(ngModel)]="memoria.areaAfectadaIndirectaM2" class="input-num"
+                  [readonly]="!isEditing" /></td>
+            </tr>
+            <tr>
+              <td><strong>AFECTADA TOTAL</strong></td>
+              <td>m²</td>
+              <td class="td-calc">{{ (+(memoria.areaAfectadaDirectaM2 || 0) + +(memoria.areaAfectadaIndirectaM2 ||
+                0)).toFixed(2) }}</td>
+            </tr>
+            <tr>
+              <td><strong>ÁREA REMANENTE</strong></td>
+              <td>m²</td>
+              <td><input type="number" [(ngModel)]="memoria.areaRemanenteM2" class="input-num"
+                  [readonly]="!isEditing" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      }
+
+      <div class="areas-tabs-wrapper">
+        <div class="areas-tabs-header">
+          <div class="areas-tabs-nav">
+            @for (area of memoria.areasAfectadas; track $index; let aIdx = $index) {
+            @if(isEditing || esVisible('tab_area_' + aIdx, true)) {
+            <button class="area-tab-btn" [class.area-tab-btn--active]="areaTabActiva === aIdx"
+              [class.is-hidden-edit]="isEditing && !esVisible('tab_area_' + aIdx, true)"
+              (click)="areaTabActiva = aIdx">Área {{ aIdx + 1 }} @if(isEditing){<span class="btn-vis"
+                (click)="$event.stopPropagation(); toggleVisibilidad('tab_area_'+aIdx, true)">{{getIcono('tab_area_'+aIdx,
+                true)}}</span>}</button>
+            }
+            }
+            @if (isEditing) { <button class="area-tab-btn area-tab-btn--add" (click)="agregarAreaAfectada()">+
+              Nueva</button> }
+          </div>
+          @if (isEditing && memoria.areasAfectadas.length > 1) { <button class="btn-delete area-tab-delete"
+            (click)="eliminarAreaAfectada(areaTabActiva)">✖ Eliminar</button> }
+        </div>
+
+        @for (area of memoria.areasAfectadas; track $index; let aIdx = $index) {
+        @if (areaTabActiva === aIdx) {
+        <div class="area-tab-content">
+          @if(isEditing || esVisible('blk_6_2_'+aIdx, area.colindanciaNorte)) {
+          <div [class.is-hidden-edit]="isEditing && !esVisible('blk_6_2_'+aIdx, area.colindanciaNorte)">
+            <div class="seccion__subtitulo" style="margin-top: 0;">6.2.{{ aIdx + 1 }} COLINDANCIAS Y LINDEROS
+              @if(isEditing){<button type="button" class="btn-vis"
+                (click)="toggleVisibilidad('blk_6_2_'+aIdx, area.colindanciaNorte)">{{getIcono('blk_6_2_'+aIdx,
+                area.colindanciaNorte)}}</button>}</div>
+            @if (isEditing) {
+            <div class="actions-coord">
+              <label class="btn btn--upload-coord" [class.is-loading]="cargando.colindanciasArea[aIdx]">
+                <span class="upload-spinner" *ngIf="cargando.colindanciasArea[aIdx]"></span>
+                <span>{{ cargando.colindanciasArea[aIdx] ? 'Cargando...' : '🔍 Extraer Tablas' }}</span>
+                <input type="file" accept=".csv,.xlsx,.xls" (change)="cargarColindancias($event, aIdx)"
+                  (click)="$any($event.target).value = null" hidden>
+              </label>
+            </div>
+            }
+            <table class="tabla-colind">
+              <thead>
+                <tr>
+                  <th>LÍMITE</th>
+                  <th>COLINDANCIA</th>
+                  <th>LONGITUD (m)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="td-limite">NORTE</td>
+                  <td><input [(ngModel)]="area.colindanciaNorte" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input type="number" [(ngModel)]="area.longitudNorte" class="input-num" [readonly]="!isEditing" />
+                  </td>
+                </tr>
+                <tr>
+                  <td class="td-limite">SUR</td>
+                  <td><input [(ngModel)]="area.colindanciaSur" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input type="number" [(ngModel)]="area.longitudSur" class="input-num" [readonly]="!isEditing" />
+                  </td>
+                </tr>
+                <tr>
+                  <td class="td-limite">ESTE</td>
+                  <td><input [(ngModel)]="area.colindanciaEste" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input type="number" [(ngModel)]="area.longitudEste" class="input-num" [readonly]="!isEditing" />
+                  </td>
+                </tr>
+                <tr>
+                  <td class="td-limite">OESTE</td>
+                  <td><input [(ngModel)]="area.colindanciaOeste" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input type="number" [(ngModel)]="area.longitudOeste" class="input-num" [readonly]="!isEditing" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          }
+
+          @if(isEditing || esVisible('blk_6_3_'+aIdx, area.coordenadas)) {
+          <div [class.is-hidden-edit]="isEditing && !esVisible('blk_6_3_'+aIdx, area.coordenadas)">
+            <div class="seccion__subtitulo">6.3.{{ aIdx + 1 }} COORDENADAS UTM WGS84 @if(isEditing){<button
+                type="button" class="btn-vis"
+                (click)="toggleVisibilidad('blk_6_3_'+aIdx, area.coordenadas)">{{getIcono('blk_6_3_'+aIdx,
+                area.coordenadas)}}</button>}</div>
+            @if (isEditing) {
+            <div class="actions-coord">
+              <button class="btn btn--outline btn--add" (click)="agregarCoordenadaArea(aIdx)">+ Agregar Vértice</button>
+              <label class="btn btn--upload-coord" [class.is-loading]="cargando.coordenadasArea[aIdx]">
+                <span class="upload-spinner" *ngIf="cargando.coordenadasArea[aIdx]"></span>
+                <span>{{ cargando.coordenadasArea[aIdx] ? 'Cargando...' : '🔍 Extraer Tablas' }}</span>
+                <input type="file" accept=".csv,.xlsx,.xls" (change)="cargarDatosDesdeArchivo($event, 'afectada', aIdx)"
+                  hidden>
+              </label>
+            </div>
+            }
+            <div class="table-scroll">
+              <table class="tabla-colind">
+                <thead>
+                  <tr>
+                    <th>VÉRTICE</th>
+                    <th>LADO</th>
+                    <th>DISTANCIA</th>
+                    <th>ESTE (X)</th>
+                    <th>NORTE (Y)</th>@if (isEditing) { <th>ACCIÓN</th> }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (c of area.coordenadas; track $index; let i = $index) {
+                  <tr>
+                    <td class="td-limite"><input type="number" [(ngModel)]="c.vertice" style="width:50px"
+                        [readonly]="!isEditing" /></td>
+                    <td><input [(ngModel)]="c.lado" class="input-full" [readonly]="!isEditing" /></td>
+                    <td><input type="number" [(ngModel)]="c.distancia" class="input-num" [readonly]="!isEditing" /></td>
+                    <td><input type="number" [(ngModel)]="c.esteX" class="input-num" [readonly]="!isEditing" /></td>
+                    <td><input type="number" [(ngModel)]="c.norteY" class="input-num" [readonly]="!isEditing" /></td>
+                    @if (isEditing) { <td><button (click)="eliminarCoordenadaArea(aIdx, i)"
+                        class="btn-delete">✖</button></td> }
+                  </tr>
+                  }
+                  @if (area.coordenadas.length === 0) { <tr>
+                    <td [attr.colspan]="isEditing ? 6 : 5" class="empty-row">Sin vértices.</td>
+                  </tr> }
+                </tbody>
+              </table>
+            </div>
+          </div>
+          }
+        </div>
+        }
+        }
+      </div>
+    </div>
+    }
+
+    @if (seccionActiva === 7) {
+    <div class="seccion">
+      @if(isEditing || esVisible('tit_sec7', true)) {
+      <div class="seccion__titulo" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec7', true)">
+        7. DESCRIPCIÓN DE EDIFICACIONES
+        @if(isEditing){<button type="button" class="btn-vis"
+          (click)="toggleVisibilidad('tit_sec7', true)">{{getIcono('tit_sec7', true)}}</button>}
+      </div>
+      }
+
+      @if(isEditing || esVisible('blk_7_1', memoria.modulosAreaTechada)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_7_1', memoria.modulosAreaTechada)">
+        <label class="toggle-section-card" [class.is-active]="memoria.afectaAreaTechada">
+          <div class="toggle-section-card__text">
+            <div class="title">7.1 ÁREA TECHADA @if(isEditing){<button type="button" class="btn-vis"
+                (click)="$event.preventDefault(); toggleVisibilidad('blk_7_1', memoria.modulosAreaTechada)">{{getIcono('blk_7_1',
+                memoria.modulosAreaTechada)}}</button>}</div>
+            <div class="desc">Marcar si se afecta el área techada en este predio.</div>
+          </div>
+          <div class="toggle-section-card__input"><input type="checkbox" [(ngModel)]="memoria.afectaAreaTechada"
+              [disabled]="!isEditing"></div>
+        </label>
+
+        @if (memoria.afectaAreaTechada) {
+        @if (isEditing || memoria.descripcionAreaTechada) {
+        <div class="campo campo--full" style="margin: 1rem 0 0.5rem;">
+          <label>DESCRIPCIÓN GENERAL DEL ÁREA TECHADA</label>
+          <textarea [(ngModel)]="memoria.descripcionAreaTechada" [readonly]="!isEditing" rows="2" class="input-textarea"
+            placeholder="EL PREDIO AFECTADO ES DE USO VIVIENDA, CUENTA CON ÁREA TECHADA..."></textarea>
+        </div>
+        }
+        @if (isEditing) {
+        <div class="actions-coord" style="margin-top: 1rem;">
+          <button class="btn btn--outline btn--add" (click)="agregarModulo()">+ Agregar Módulo</button>
+        </div>
+        }
+        @if (memoria.modulosAreaTechada.length > 0) {
+        <div style="margin: 1.2rem 0 0.5rem;">
+          <div class="seccion__subtitulo">CLASIFICACIÓN DEL ÁREA TECHADA DEL PREDIO</div>
+          <div class="table-scroll">
+            <table class="tabla-colind">
+              <thead>
+                <tr>
+                  <th rowspan="2" style="vertical-align:middle;">ÁREA TECHADA (AT)</th>
+                  <th rowspan="2" style="vertical-align:middle; text-align:center;">NIVEL</th>
+                  <th colspan="3" style="text-align:center;">ÁREA DE TECHADA AFECTADA (m²)</th>
+                  <th rowspan="2" style="vertical-align:middle; text-align:center;">ALEROS<br><small
+                      style="font-weight:400;">(Proyección de Techo) (m²)</small></th>
+                </tr>
+                <tr>
+                  <th>DIRECTA</th>
+                  <th>INDIRECTA *</th>
+                  <th>TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of filasClasifPaginadas; track fila.moduloIdx + '-' + fila.pisoIdx) {
+                @let modulo = memoria.modulosAreaTechada[fila.moduloIdx];
+                @let piso = modulo.pisos[fila.pisoIdx];
+                <tr>
+                  @if (fila.primerEnModulo) {
+                  <td class="td-orange" [attr.rowspan]="fila.rowspan" style="font-weight:700; vertical-align:middle;">
+                    @if (isEditing) {
+                    <input [(ngModel)]="modulo.nombre" placeholder="AT1 (MÓDULO 1)"
+                      style="font-weight:700; border:none; background:transparent; color:var(--c-orange); width:100%;" />
+                    } @else { {{ modulo.nombre }} }
+                  </td>
+                  }
+                  <td style="text-align:center;">
+                    @if (isEditing) {
+                    <input [(ngModel)]="piso.nivel" placeholder="1" class="input-num"
+                      style="width:50px; text-align:center;" />
+                    } @else { {{ piso.nivel || (fila.pisoIdx + 1) }} }
+                  </td>
+                  <td class="td-num">
+                    <input type="number" [(ngModel)]="piso.areaDirectaM2" class="input-num" [readonly]="!isEditing"
+                      (ngModelChange)="onPisoCambio(fila.moduloIdx)" />
+                  </td>
+                  <td class="td-num">
+                    <input type="number" [(ngModel)]="piso.areaIndirectaM2" class="input-num" [readonly]="!isEditing"
+                      (ngModelChange)="onPisoCambio(fila.moduloIdx)" />
+                  </td>
+                  <td class="td-num td-calc">
+                    <strong>{{ (+(piso.areaDirectaM2||0) + +(piso.areaIndirectaM2||0)).toFixed(2) }}</strong>
+                  </td>
+                  <td class="td-num" style="text-align:center;">
+                    <input type="number" [(ngModel)]="piso.aleros" class="input-num" [readonly]="!isEditing"
+                      placeholder="0" style="width:70px;" />
+                  </td>
+                </tr>
+                }
+                <tr class="fila-total">
+                  <td colspan="2"><strong>TOTAL</strong></td>
+                  <td class="td-num"><strong>{{ totalAreaDirecta | number:'1.2-2' }}</strong></td>
+                  <td class="td-num"><strong>{{ totalAreaIndirecta | number:'1.2-2' }}</strong></td>
+                  <td class="td-num"><strong>{{ totalAreaTechada | number:'1.2-2' }}</strong></td>
+                  <td class="td-num"><strong>{{ totalAleros | number:'1.2-2' }}</strong></td>
+                </tr>
+              </tbody>
+              @if (filasClasif.length > 5) {
+              <div class="paginator-bar">
+                <div class="paginator-bar__size">
+                  <span>Filas por página:</span>
+                  @for (op of opcionesTamanioPaginaClasif; track op) {
+                  <button class="pag-size-btn" [class.pag-size-btn--active]="tamanioPaginaClasif === op"
+                    (click)="cambiarTamanioPaginaClasif(op)">{{ op }}</button>
+                  }
+                </div>
+                <div class="paginator-bar__nav">
+                  <span class="pag-info">
+                    {{ paginaClasif * tamanioPaginaClasif + 1 }}–{{ paginaClasifFin }}
+                    de {{ filasClasif.length }} filas
+                  </span>
+                  <button class="nav-pag-btn" [disabled]="paginaClasif === 0" (click)="paginaClasif = 0">«</button>
+                  <button class="nav-pag-btn" [disabled]="paginaClasif === 0"
+                    (click)="paginaClasif = paginaClasif - 1">‹</button>
+                  <button class="nav-pag-btn" [disabled]="paginaClasif >= totalPaginasClasif - 1"
+                    (click)="paginaClasif = paginaClasif + 1">›</button>
+                  <button class="nav-pag-btn" [disabled]="paginaClasif >= totalPaginasClasif - 1"
+                    (click)="paginaClasif = totalPaginasClasif - 1">»</button>
+                </div>
+              </div>
+              }
+              @if (filasClasif.length === 0) {
+              <tr>
+                <td colspan="6" class="empty-row">Sin módulos registrados.</td>
+              </tr>
+              }
+            </table>
+          </div>
+        </div>
+        }
+        @if (memoria.modulosAreaTechada.length > 0) { <div class="seccion__subtitulo" style="margin-top:1.5rem;">
+          DESCRIPCIÓN ÁREA TECHADA</div> }
+        @for (modulo of memoria.modulosAreaTechada; track $index; let mIdx = $index) {
+        <div class="modulo-block">
+          <div class="modulo-block__head">
+            <div class="modulo-block__name"><span style="font-weight:800; color:var(--c-orange);">{{ modulo.nombre
+                }}</span></div>
+            <div class="modulo-block__meta"><span>Total: {{ modulo.areaTotal | number:'1.2-2' }} m²</span><span>{{
+                modulo.pisos.length }} nivel(es)</span></div>
+            @if (isEditing) { <button class="btn-delete" (click)="eliminarModulo(mIdx)" style="white-space:nowrap;">✖
+              Eliminar módulo</button> }
+          </div>
+          <div class="pisos-tabs-wrapper">
+            <div class="pisos-tabs-nav">
+              @for (piso of modulo.pisos; track $index; let pIdx = $index) {
+              <button class="piso-tab-btn" [class.piso-tab-btn--active]="getPisoActivo(mIdx) === pIdx"
+                (click)="setPisoActivo(mIdx, pIdx)">{{ piso.etiqueta || ('Nivel ' + (piso.nivel || (pIdx + 1)))
+                }}</button>
+              }
+              @if (isEditing) { <button class="piso-tab-btn piso-tab-btn--add" (click)="agregarPiso(mIdx)">+
+                Nivel</button> }
+            </div>
+            @for (piso of modulo.pisos; track $index; let pIdx = $index) {
+            @if (getPisoActivo(mIdx) === pIdx) {
+            <div class="piso-tab-content">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                @if (isEditing) { <input [(ngModel)]="piso.etiqueta" placeholder="PRIMER NIVEL"
+                  style="font-weight:700; font-size:0.9rem; border:none; background:transparent;" /> }
+                @else { <span style="font-weight:700; font-size:0.9rem; color:var(--c-text-md);">{{ piso.etiqueta
+                  }}</span> }
+                @if (isEditing && modulo.pisos.length > 1) { <button class="btn-delete"
+                  (click)="eliminarPiso(mIdx, pIdx)">✖ Eliminar nivel</button> }
+              </div>
+              <div class="table-scroll" style="margin-bottom:1.2rem;">
+                <table class="tabla-colind">
+                  <thead>
+                    <tr>
+                      <th>METRADO (m²)</th>
+                      <th>USO</th>
+                      <th>ANTIGÜEDAD</th>
+                      <th>MATERIAL PREDOMINANTE</th>
+                      <th>ESTADO DE CONSERVACIÓN</th>
+                      <th>ESTADO DE CONSTRUCCIÓN</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="td-calc" style="text-align:center; font-weight:700;">{{ (+(piso.areaDirectaM2||0) +
+                        +(piso.areaIndirectaM2||0)).toFixed(2) }}</td>
+                      <td><input [(ngModel)]="piso.uso" class="input-full" [readonly]="!isEditing"
+                          placeholder="VIVIENDA" /></td>
+                      <td><input [(ngModel)]="piso.antiguedad" class="input-full" [readonly]="!isEditing"
+                          placeholder="5 AÑOS" /></td>
+                      <td><input [(ngModel)]="piso.materialPredominante" class="input-full" [readonly]="!isEditing"
+                          placeholder="LADRILLO" /></td>
+                      <td><input [(ngModel)]="piso.estadoConservacion" class="input-full" [readonly]="!isEditing"
+                          placeholder="BUENO" /></td>
+                      <td><input [(ngModel)]="piso.estadoConstruccion" class="input-full" [readonly]="!isEditing"
+                          placeholder="CONSOLIDADO" /></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="seccion__subtitulo" style="margin-top:0;">PARTIDAS CONSTRUCTIVAS</div>
+              <table class="tabla-colind">
+                <thead>
+                  <tr>
+                    <th style="width:240px;">PARTIDAS</th>
+                    <th>CARACTERÍSTICAS CONSTRUCTIVAS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (partida of piso.partidas; track $index) {
+                  <tr>
+                    <td class="td-orange" style="font-weight:700; white-space:nowrap;">{{ partida.nombre }} :</td>
+                    <td>
+                      @if (isEditing) { <textarea [(ngModel)]="partida.descripcion" class="input-textarea" rows="2"
+                        style="width:100%; min-height:52px; border:none; background:transparent; resize:vertical;"
+                        [placeholder]="partida.placeholder || 'Descripción...'"></textarea> }
+                      @else { <span style="white-space:pre-wrap;">{{ partida.descripcion || '-' }}</span> }
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            }
+            }
+          </div>
+        </div>
+        }
+        @if (memoria.modulosAreaTechada.length === 0) {
+        <div class="empty-state-box"><span style="font-size:1.5rem;">🏗️</span>
+          <p>Sin módulos registrados.<br>Activa la edición y haz clic en "+ Agregar Módulo".</p>
+        </div>
+        }
+        }
+      </div>
+      }
+
+      @if(isEditing || esVisible('blk_7_2', memoria.obrasComplementarias)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_7_2', memoria.obrasComplementarias)">
+        <label class="toggle-section-card" [class.is-active]="memoria.afectaObrasComplementarias">
+          <div class="toggle-section-card__text">
+            <div class="title">7.2 OBRAS COMPLEMENTARIAS @if(isEditing){<button type="button" class="btn-vis"
+                (click)="$event.preventDefault(); toggleVisibilidad('blk_7_2', memoria.obrasComplementarias)">{{getIcono('blk_7_2',
+                memoria.obrasComplementarias)}}</button>}</div>
+            <div class="desc">Marcar si se afectan obras complementarias.</div>
+          </div>
+          <div class="toggle-section-card__input"><input type="checkbox"
+              [(ngModel)]="memoria.afectaObrasComplementarias" [disabled]="!isEditing"></div>
+        </label>
+
+        @if (memoria.afectaObrasComplementarias) {
+        <p class="obra-description-text">SE AFECTA LA SIGUIENTE OBRA COMPLEMENTARIA, CUYAS CARACTERÍSTICAS SON:</p>
+        @if (isEditing) {
+        <div class="actions-coord">
+          <button class="btn btn--outline btn--add" (click)="agregarObra()">+ Agregar Obra</button>
+          <label class="btn btn--upload-coord" [class.is-loading]="cargando.obras">
+            <span class="upload-spinner" *ngIf="cargando.obras"></span>
+            <span>{{ cargando.obras ? 'Cargando...' : '🔍 Extraer Tablas' }}</span>
+            <input type="file" accept=".csv,.xlsx,.xls" (change)="cargarObrasDesdeArchivo($event)" hidden>
+          </label>
+        </div>
+        }
+        @if (memoria.obrasComplementarias.length > 3) {
+        <div class="paginator-bar"
+          style="border-radius: var(--radius-md) var(--radius-md) 0 0; border-bottom: none; margin-bottom: 0;">
+          <div class="paginator-bar__size">
+            <span>Obras por página:</span>
+            @for (op of opcionesTamanioPaginaObras; track op) {
+            <button class="pag-size-btn" [class.pag-size-btn--active]="tamanioPaginaObras === op"
+              (click)="cambiarTamanioPaginaObras(op)">{{ op }}</button>
+            }
+          </div>
+          <div class="paginator-bar__nav">
+            <span class="pag-info">
+              {{ paginaObras * tamanioPaginaObras + 1 }}–{{ paginaObrasFin }}
+              de {{ memoria.obrasComplementarias.length }} obras
+            </span>
+            <button class="nav-pag-btn" [disabled]="paginaObras === 0" (click)="paginaObras = 0">«</button>
+            <button class="nav-pag-btn" [disabled]="paginaObras === 0"
+              (click)="paginaObras = paginaObras - 1">‹</button>
+            <button class="nav-pag-btn" [disabled]="paginaObras >= totalPaginasObras - 1"
+              (click)="paginaObras = paginaObras + 1">›</button>
+            <button class="nav-pag-btn" [disabled]="paginaObras >= totalPaginasObras - 1"
+              (click)="paginaObras = totalPaginasObras - 1">»</button>
+          </div>
+        </div>
+        }
+
+        @for (obra of obrasPaginadas; track $index) {
+        @let i = paginaObras * tamanioPaginaObras + $index;
+        <div class="obra-complementaria-block"
+          style="margin-bottom:2.5rem; border:1px solid var(--c-border); padding:1.5rem; border-radius:var(--radius-md); background:var(--c-bg); box-shadow:var(--shadow-sm);">
+          <div
+            style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.2rem; border-bottom:2px solid var(--c-border-md); padding-bottom:0.8rem;">
+            <div style="display:flex; flex-direction:column; width:100%;">
+              <span
+                style="font-weight:800; font-size:0.75rem; color:var(--c-text-mute); letter-spacing:0.5px;">DESCRIPCIÓN
+                DE OBRAS COMPLEMENTARIAS</span>
+              <div
+                style="display:flex; align-items:center; font-weight:800; font-size:1.05rem; color:var(--c-text); margin-top:0.3rem;">
+                <input [(ngModel)]="obra.codigo" placeholder="OC1"
+                  style="width:55px; font-weight:800; border:none; background:transparent; padding:0; color:var(--c-orange);"
+                  [readonly]="!isEditing">:
+                <input [(ngModel)]="obra.descripcion" placeholder="SARDINEL DE CONCRETO ARMADO..."
+                  style="width:100%; font-weight:800; border:none; background:transparent; padding:0; margin-left:0.3rem;"
+                  [readonly]="!isEditing">
+              </div>
+            </div>
+            @if (isEditing) { <button class="btn-delete" (click)="eliminarObra(i)"
+              style="white-space:nowrap; margin-left:1rem;">✖ Eliminar</button> }
+          </div>
+          <div class="table-scroll" style="margin-bottom:1.5rem;">
+            <table class="tabla-colind" style="margin-bottom:0;">
+              <thead>
+                <tr>
+                  <th>METRADO</th>
+                  <th>UNIDAD</th>
+                  <th>ANTIGÜEDAD</th>
+                  <th>MATERIAL PREDOMINANTE</th>
+                  <th>ESTADO DE CONSERVACIÓN</th>
+                  <th>ESTADO DE CONSTRUCCIÓN</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><input type="number" [(ngModel)]="obra.metrado" class="input-num" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="obra.unidad" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="obra.antiguedad" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="obra.materialPredominante" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="obra.estadoConservacion" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="obra.estadoConstruccion" class="input-full" [readonly]="!isEditing" /></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-scroll">
+            <table class="tabla-colind" style="margin-bottom:0;">
+              <thead>
+                <tr>
+                  <th colspan="2" style="text-align:center; width:30%;">DIMENSIONES</th>
+                  <th style="text-align:center; width:70%;">CARACTERÍSTICAS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="td-limite" style="width:150px; padding-left:1rem;">LONGITUD (m)</td>
+                  <td style="width:80px;">
+                    @if (isEditing) { <input type="number" [(ngModel)]="obra.longitud" class="input-num" /> }
+                    @else { <span>{{ (obra.longitud != null && obra.longitud !== 0) ? obra.longitud : '-' }}</span> }
+                  </td>
+                  <td rowspan="2" style="vertical-align:top; padding:0;"><textarea [(ngModel)]="obra.caracteristicas"
+                      class="input-textarea" rows="3"
+                      style="width:100%; height:100%; min-height:80px; border:none; background:transparent; resize:vertical;"
+                      placeholder="OC1: SARDINEL DE CONCRETO..." [readonly]="!isEditing"></textarea></td>
+                </tr>
+                <tr>
+                  <td class="td-limite" style="padding-left:1rem;">ALTURA (m)</td>
+                  <td>
+                    @if (isEditing) { <input type="number" [(ngModel)]="obra.altura" class="input-num" /> }
+                    @else { <span>{{ (obra.altura != null && obra.altura !== 0) ? obra.altura : '-' }}</span> }
+                  </td>
+                </tr>
+                <tr>
+                  <td class="td-limite" style="padding-left:1rem;">ÁREA (m²)</td>
+                  <td>
+                    @if (isEditing) { <input type="number" [(ngModel)]="obra.area" class="input-num" /> }
+                    @else { <span>{{ (obra.area != null && obra.area !== 0) ? obra.area : '-' }}</span> }
+                  </td>
+                  <td style="padding:0.4rem 0.8rem;">
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                      <span style="font-weight:700; font-size:0.85rem; color:var(--c-text-md);">UBICACIÓN:</span>
+                      <input [(ngModel)]="obra.ubicacion" class="input-full"
+                        placeholder="SE ENCUENTRA DENTRO DEL PREDIO AFECTADO"
+                        style="border:none; background:transparent; padding:0;" [readonly]="!isEditing" />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        }
+
+        @if (memoria.obrasComplementarias.length === 0) {
+        <div class="empty-state-box"><span style="font-size:1.5rem;">🏗️</span>
+          <p>Sin obras complementarias registradas.</p>
+        </div>
+        }
+        }
+      </div>
+      }
+
+      @if(isEditing || esVisible('blk_7_3', true)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_7_3', true)">
+        <label class="toggle-section-card" [class.is-active]="memoria.afectaInstalaciones" style="margin-top:1.5rem;">
+          <div class="toggle-section-card__text">
+            <div class="title">7.3 INSTALACIONES FIJAS Y PERMANENTES @if(isEditing){<button type="button"
+                class="btn-vis"
+                (click)="$event.preventDefault(); toggleVisibilidad('blk_7_3', true)">{{getIcono('blk_7_3',
+                true)}}</button>}</div>
+            <div class="desc">Marcar si se afectan instalaciones fijas y permanentes.</div>
+          </div>
+          <div class="toggle-section-card__input"><input type="checkbox" [(ngModel)]="memoria.afectaInstalaciones"
+              [disabled]="!isEditing"></div>
+        </label>
+      </div>
+      }
+    </div>
+    }
+
+    @if (seccionActiva === 8) {
+    <div class="seccion">
+      @if(isEditing || esVisible('tit_sec8', true)) {
+      <div class="seccion__titulo" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec8', true)">
+        8. DESCRIPCIÓN DE PLANTACIONES
+        @if(isEditing){<button type="button" class="btn-vis"
+          (click)="toggleVisibilidad('tit_sec8', true)">{{getIcono('tit_sec8', true)}}</button>}
+      </div>
+      }
+
+      @if(isEditing || esVisible('blk_8_1', true)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_8_1', true)">
+        <div class="seccion__subtitulo">8.1 PLANTACIONES PERMANENTES @if(isEditing){<button type="button"
+            class="btn-vis" (click)="toggleVisibilidad('blk_8_1', true)">{{getIcono('blk_8_1', true)}}</button>}</div>
+
+        <label class="toggle-section-card" [class.is-active]="memoria.afectaFrutales">
+          <div class="toggle-section-card__text">
+            <div class="title">8.1.1 Frutales, pastos, aromáticas, medicinales y ornamentales</div>
+            <div class="desc">Marcar si se afectan este tipo de plantaciones permanentes.</div>
+          </div>
+          <div class="toggle-section-card__input"><input type="checkbox" [(ngModel)]="memoria.afectaFrutales"
+              [disabled]="!isEditing"></div>
+        </label>
+
+        @if (memoria.afectaFrutales) {
+        <div class="sub-bloque" style="margin-top:0.5rem; margin-bottom:1.5rem;">
+          @if (isEditing) {
+          <div class="actions-coord">
+            <button class="btn btn--outline btn--add" (click)="agregarPlantacion('frutales')">+ Agregar</button>
+            <label class="btn btn--upload-coord" [class.is-loading]="cargando.frutales">
+              <span class="upload-spinner" *ngIf="cargando.frutales"></span>
+              <span>{{ cargando.frutales ? 'Cargando...' : '🔍 Extraer Tablas' }}</span>
+              <input type="file" accept=".csv,.xlsx,.xls" (change)="cargarPlantacionesDesdeArchivo($event, 'frutales')"
+                hidden>
+            </label>
+          </div>
+          }
+          <div class="table-scroll">
+            <table class="tabla-colind">
+              <thead>
+                <tr>
+                  <th>NOMBRE CIENTÍFICO</th>
+                  <th>NOMBRE COMÚN</th>
+                  <th>EDAD</th>
+                  <th>UND. MEDIDA</th>
+                  <th>DIÁMETRO (m)</th>
+                  <th>ALTURA TOTAL (m)</th>
+                  <th>N° DE PLANTAS</th>
+                  <th>UTILIDAD</th>
+                  <th>OBSERVACIONES</th>
+                  @if (isEditing) { <th>ACCIÓN</th> }
+                </tr>
+              </thead>
+              <tbody>
+                @for (planta of memoria.plantacionesFrutales; track $index; let i = $index) {
+                <tr>
+                  <td><input [(ngModel)]="planta.nombreCientifico" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="planta.nombreComun" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="planta.edad" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="planta.unidadMedida" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input type="number" [(ngModel)]="planta.diametro" class="input-num" [readonly]="!isEditing" />
+                  </td>
+                  <td><input type="number" [(ngModel)]="planta.alturaTotalM" class="input-num"
+                      [readonly]="!isEditing" /></td>
+                  <td><input type="number" [(ngModel)]="planta.cantidad" class="input-num" [readonly]="!isEditing" />
+                  </td>
+                  <td><input [(ngModel)]="planta.utilidad" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="planta.observaciones" class="input-full" [readonly]="!isEditing" /></td>
+                  @if (isEditing) { <td><button (click)="eliminarPlantacion('frutales', i)"
+                      class="btn-delete">✖</button></td> }
+                </tr>
+                }
+                @if (memoria.plantacionesFrutales.length === 0) {
+                <tr>
+                  <td [attr.colspan]="isEditing ? 10 : 9" class="empty-row">Sin plantaciones registradas.</td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        }
+      </div>
+      }
+
+      @if(isEditing || esVisible('blk_8_1_2', true)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_8_1_2', true)">
+        <label class="toggle-section-card" [class.is-active]="memoria.afectaForestales">
+          <div class="toggle-section-card__text">
+            <div class="title">8.1.2 Plantaciones Permanentes: Forestales @if(isEditing){<button type="button"
+                class="btn-vis"
+                (click)="$event.preventDefault(); toggleVisibilidad('blk_8_1_2', true)">{{getIcono('blk_8_1_2',
+                true)}}</button>}</div>
+            <div class="desc">Marcar si se afectan plantaciones forestales.</div>
+          </div>
+          <div class="toggle-section-card__input"><input type="checkbox" [(ngModel)]="memoria.afectaForestales"
+              [disabled]="!isEditing"></div>
+        </label>
+
+        @if (memoria.afectaForestales) {
+        <div class="sub-bloque" style="margin-top:0.5rem; margin-bottom:1.5rem;">
+          @if (isEditing) {
+          <div class="actions-coord">
+            <button class="btn btn--outline btn--add" (click)="agregarPlantacion('forestales')">+ Agregar</button>
+          </div>
+          }
+          <div class="table-scroll">
+            <table class="tabla-colind">
+              <thead>
+                <tr>
+                  <th>NOMBRE CIENTÍFICO</th>
+                  <th>NOMBRE COMÚN</th>
+                  <th>EDAD</th>
+                  <th>UND. MEDIDA</th>
+                  <th>DIÁMETRO (m)</th>
+                  <th>ALTURA TOTAL (m)</th>
+                  <th>N° DE PLANTAS</th>
+                  <th>UTILIDAD</th>
+                  <th>OBSERVACIONES</th>
+                  @if (isEditing) { <th>ACCIÓN</th> }
+                </tr>
+              </thead>
+              <tbody>
+                @for (planta of memoria.plantacionesForestales; track $index; let i = $index) {
+                <tr>
+                  <td><input [(ngModel)]="planta.nombreCientifico" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="planta.nombreComun" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="planta.edad" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="planta.unidadMedida" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input type="number" [(ngModel)]="planta.diametro" class="input-num" [readonly]="!isEditing" />
+                  </td>
+                  <td><input type="number" [(ngModel)]="planta.alturaTotalM" class="input-num"
+                      [readonly]="!isEditing" /></td>
+                  <td><input type="number" [(ngModel)]="planta.cantidad" class="input-num" [readonly]="!isEditing" />
+                  </td>
+                  <td><input [(ngModel)]="planta.utilidad" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="planta.observaciones" class="input-full" [readonly]="!isEditing" /></td>
+                  @if (isEditing) { <td><button (click)="eliminarPlantacion('forestales', i)"
+                      class="btn-delete">✖</button></td> }
+                </tr>
+                }
+                @if (memoria.plantacionesForestales.length === 0) {
+                <tr>
+                  <td [attr.colspan]="isEditing ? 10 : 9" class="empty-row">Sin plantaciones registradas.</td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        }
+      </div>
+      }
+
+      @if(isEditing || esVisible('blk_8_1_3', true)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_8_1_3', true)">
+        <label class="toggle-section-card" [class.is-active]="memoria.afectaCercoVivo">
+          <div class="toggle-section-card__text">
+            <div class="title">8.1.3 Cerco Vivo @if(isEditing){<button type="button" class="btn-vis"
+                (click)="$event.preventDefault(); toggleVisibilidad('blk_8_1_3', true)">{{getIcono('blk_8_1_3',
+                true)}}</button>}</div>
+            <div class="desc">Marcar si se afecta cerco vivo.</div>
+          </div>
+          <div class="toggle-section-card__input"><input type="checkbox" [(ngModel)]="memoria.afectaCercoVivo"
+              [disabled]="!isEditing"></div>
+        </label>
+
+        @if (memoria.afectaCercoVivo) {
+        <div class="sub-bloque" style="margin-top:0.5rem; margin-bottom:1.5rem;">
+          @if (isEditing) { <div class="actions-coord"><button class="btn btn--outline btn--add"
+              (click)="agregarPlantacion('cercoVivo')">+ Agregar</button></div> }
+          <div class="table-scroll">
+            <table class="tabla-colind">
+              <thead>
+                <tr>
+                  <th>NOMBRE CIENTÍFICO</th>
+                  <th>NOMBRE COMÚN</th>
+                  <th>EDAD</th>
+                  <th>DISTANCIAMIENTO ENTRE PLANTAS (m)</th>
+                  <th>LONGITUD DE CERCO (m)</th>
+                  <th>OBSERVACIONES</th>
+                  @if (isEditing) { <th>ACCIÓN</th> }
+                </tr>
+              </thead>
+              <tbody>
+                @for (planta of memoria.plantacionesCercoVivo; track $index; let i = $index) {
+                <tr>
+                  <td><input [(ngModel)]="planta.nombreCientifico" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="planta.nombreComun" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="planta.edad" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input type="number" [(ngModel)]="planta.distanciamiento" class="input-num"
+                      [readonly]="!isEditing" /></td>
+                  <td><input type="number" [(ngModel)]="planta.longitudCerco" class="input-num"
+                      [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="planta.observaciones" class="input-full" [readonly]="!isEditing" /></td>
+                  @if (isEditing) { <td><button (click)="eliminarPlantacion('cercoVivo', i)"
+                      class="btn-delete">✖</button></td> }
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        }
+      </div>
+      }
+
+      @if(isEditing || esVisible('blk_8_2', true)) {
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_8_2', true)">
+        <div class="seccion__subtitulo" style="margin-top:2rem;">8.2 PLANTACIONES TRANSITORIAS @if(isEditing){<button
+            type="button" class="btn-vis" (click)="toggleVisibilidad('blk_8_2', true)">{{getIcono('blk_8_2',
+            true)}}</button>}</div>
+
+        <label class="toggle-section-card" [class.is-active]="memoria.afectaPlantacionesTransitorias">
+          <div class="toggle-section-card__text">
+            <div class="title">8.2 Se Afectan Plantaciones Transitorias</div>
+            <div class="desc">Marcar si se afectan plantaciones de ciclo corto o transitorias.</div>
+          </div>
+          <div class="toggle-section-card__input"><input type="checkbox"
+              [(ngModel)]="memoria.afectaPlantacionesTransitorias" [disabled]="!isEditing"></div>
+        </label>
+
+        @if (memoria.afectaPlantacionesTransitorias) {
+        <div class="sub-bloque" style="margin-top:0.5rem;">
+          @if (isEditing) { <div class="actions-coord"><button class="btn btn--outline btn--add"
+              (click)="agregarPlantacion('transitorias')">+ Agregar</button></div> }
+          <div class="table-scroll">
+            <table class="tabla-colind">
+              <thead>
+                <tr>
+                  <th>NOMBRE CIENTÍFICO</th>
+                  <th>NOMBRE COMÚN</th>
+                  <th>EDAD</th>
+                  <th>UND. MEDIDA</th>
+                  <th>CANTIDAD</th>
+                  <th>UTILIDAD</th>
+                  <th>OBSERVACIONES</th>
+                  @if (isEditing) { <th>ACCIÓN</th> }
+                </tr>
+              </thead>
+              <tbody>
+                @for (planta of memoria.plantacionesTransitorias; track $index; let i = $index) {
+                <tr>
+                  <td><input [(ngModel)]="planta.nombreCientifico" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="planta.nombreComun" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="planta.edad" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="planta.unidadMedida" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input type="number" [(ngModel)]="planta.cantidad" class="input-num" [readonly]="!isEditing" />
+                  </td>
+                  <td><input [(ngModel)]="planta.utilidad" class="input-full" [readonly]="!isEditing" /></td>
+                  <td><input [(ngModel)]="planta.observaciones" class="input-full" [readonly]="!isEditing" /></td>
+                  @if (isEditing) { <td><button (click)="eliminarPlantacion('transitorias', i)"
+                      class="btn-delete">✖</button></td> }
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        }
+      </div>
+      }
+    </div>
+    }
+
+    @if (seccionActiva === 9) {
+    <div class="seccion">
+      @if(isEditing || esVisible('tit_sec9', true)) {
+      <div class="seccion__titulo" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec9', true)">
+        9. PERJUICIO ECONÓMICO
+        @if(isEditing){<button type="button" class="btn-vis"
+          (click)="toggleVisibilidad('tit_sec9', true)">{{getIcono('tit_sec9', true)}}</button>}
+      </div>
+      <table class="tabla-colind tabla-colind--sm" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec9', true)">
+        <thead>
+          <tr>
+            <th>IDENTIFICACIÓN</th>
+            <th>CORRESPONDE</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>DAÑO EMERGENTE</td>
+            <td><select [(ngModel)]="memoria.danioEmergente" class="input-full" [disabled]="!isEditing">
+                <option [ngValue]="true">SÍ</option>
+                <option [ngValue]="false">NO</option>
+              </select></td>
+          </tr>
+          <tr>
+            <td>LUCRO CESANTE</td>
+            <td><select [(ngModel)]="memoria.lucroCesante" class="input-full" [disabled]="!isEditing">
+                <option [ngValue]="true">SÍ</option>
+                <option [ngValue]="false">NO</option>
+              </select></td>
+          </tr>
+        </tbody>
+      </table>
+      }
+    </div>
+    }
+
+    @if (seccionActiva === 10) {
+    <div class="seccion">
+      @if(isEditing || esVisible('tit_sec10', true)) {
+      <div class="seccion__titulo" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec10', true)">
+        10. ELEMENTOS A TASAR
+        @if(isEditing){<button type="button" class="btn-vis"
+          (click)="toggleVisibilidad('tit_sec10', true)">{{getIcono('tit_sec10', true)}}</button>}
+      </div>
+      <table class="tabla-colind" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec10', true)">
+        <thead>
+          <tr>
+            <th>DESCRIPCIÓN</th>
+            <th>UNIDAD</th>
+            <th>CANTIDAD</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of memoria.elementosATasar; track $index) {
+          <tr [class.fila-encabezado]="e.esEncabezado">
+            <td [class.td-orange]="!e.esEncabezado" [class.td-header-row]="e.esEncabezado">{{ e.descripcion }}</td>
+            <td>@if (!e.esEncabezado) { <input [(ngModel)]="e.unidad" class="input-full" [readonly]="!isEditing" /> }
+            </td>
+            <td>@if (!e.esEncabezado) { <input type="number" [(ngModel)]="e.cantidad" class="input-num"
+                [readonly]="!isEditing" /> }</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+      }
+    </div>
+    }
+
+    @if (seccionActiva === 11) {
+    <div class="seccion">
+      @if(isEditing || esVisible('tit_sec11', true)) {
+      <div class="seccion__titulo" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec11', true)">
+        11. DOCUMENTOS ADJUNTOS
+        @if(isEditing){<button type="button" class="btn-vis"
+          (click)="toggleVisibilidad('tit_sec11', true)">{{getIcono('tit_sec11', true)}}</button>}
+      </div>
+      <table class="tabla-colind tabla-colind--sm" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec11', true)">
+        <thead>
+          <tr>
+            <th>DESCRIPCIÓN</th>
+            <th>PRESENTA</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="td-orange">1. FICHA RENIEC</td>
+            <td><select class="input-full" [disabled]="!isEditing">
+                <option value="SÍ">SÍ</option>
+                <option value="NO">NO</option>
+              </select></td>
+          </tr>
+          <tr>
+            <td class="td-orange">2. PARTIDA REGISTRAL N° {{ memoria.partidaRegistral || '---' }}</td>
+            <td><select class="input-full" [disabled]="!isEditing">
+                <option value="SÍ">SÍ</option>
+                <option value="NO">NO</option>
+              </select></td>
+          </tr>
+        </tbody>
+      </table>
+      }
+    </div>
+    }
+
+    @if (seccionActiva === 12) {
+    <div class="seccion">
+      @if(isEditing || esVisible('tit_sec12', true)) {
+      <div class="seccion__titulo" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec12', true)">
+        12. OBSERVACIONES
+        @if(isEditing){<button type="button" class="btn-vis"
+          (click)="toggleVisibilidad('tit_sec12', true)">{{getIcono('tit_sec12', true)}}</button>}
+      </div>
+      <div [class.is-hidden-edit]="isEditing && !esVisible('tit_sec12', true)">
+        @for (obs of memoria.observaciones; track $index; let i = $index) {
+        <div class="campo campo--full" style="margin-bottom:1.5rem">
+          <textarea [(ngModel)]="memoria.observaciones[i]" [readonly]="!isEditing" rows="6"
+            class="input-textarea input-textarea--expandida"
+            [style.min-height]="calcularAlturaTextarea(memoria.observaciones[i])"></textarea>
+        </div>
+        }
+        @if (memoria.observaciones.length === 0) { <p class="empty-row">Sin observaciones.</p> }
+      </div>
+      }
+    </div>
+    }
+
+  </div>
+
+  <div class="form-footer">
+    @if (guardado) { <span class="save-success">¡Padrón actualizado exitosamente! ☁️✔️</span> }
+    @if (sincronizandoPadron()) { <span class="save-success" style="color:#0284c7;">Guardando en el Padrón...</span> }
+    @if (envioExitoso()) { <span class="save-success save-success--cloud">¡Subido a la nube exitosamente!</span> }
+    @if (envioError()) { <span class="save-error">{{ envioError() }}</span> }
+    @if (isEditing) { <span class="editing-banner">Editando datos del Padrón</span> }
+
+    @if (!isEditing) {
+    <button type="button" (click)="descargarJson()" title="Descargar JSON de esta memoria">
+      ⬇ Descargar JSON
+    </button>
+    <button class="btn btn--outline" (click)="limpiar()">Limpiar Pantalla</button>
+    <button class="btn btn--edit" (click)="activarEdicion()">Editar</button>
+    <button class="btn btn--cloud" (click)="subirFilaPadron(); enviarALaNube()"
+      [disabled]="enviando() || indicePredioActual() < 0 || !memoria.codigo">
+      @if (enviando()) { <span class="spinner-mini"></span> Procesando... } @else { Subir Fila y Memoria (Nube) ☁️ }
+    </button>
+    } @else {
+    <button class="btn btn--cancel" (click)="cancelarEdicion()">Cancelar</button>
+    <button class="btn btn--save" (click)="guardar()" [disabled]="sincronizandoPadron()">Guardar Cambios</button>
+    }
+  </div>
+</div>

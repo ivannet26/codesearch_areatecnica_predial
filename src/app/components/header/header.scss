@@ -1,0 +1,190 @@
+// ==========================================
+// 🎩 VARIABLES DEL HEADER
+// ==========================================
+
+$hdr-bg:         #1A2340; // Azul noche corporativo
+$hdr-accent:     #F5A623; // Ámbar / Amarillo institucional
+$hdr-text-main:  #FFFFFF;
+$hdr-text-mut:   rgba(255, 255, 255, 0.7);
+$hdr-height:     60px;
+$hdr-transition: 0.25s ease-in-out;
+
+// ==========================================
+// 🔝 COMPONENTE HEADER
+// ==========================================
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(1rem, 3vw, 1.5rem); // Padding dinámico para móviles y escritorio
+  height: $hdr-height;
+  background-color: $hdr-bg;
+  border-bottom: 3px solid $hdr-accent;
+
+  // Posicionamiento
+  position: sticky;
+  top: 0;
+  z-index: 100; // Asegura que pase por encima del contenido (layout-content)
+
+  // Sombra suave para darle volumen sobre el fondo gris del layout principal
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  // ----------------------------------------
+  // 👈 SECCIÓN IZQUIERDA
+  // ----------------------------------------
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+  }
+
+  // Botón Hamburguesa (Micro-interacciones agregadas)
+  &__menu-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    padding: 6px;
+    border-radius: 6px;
+    transition: background-color $hdr-transition;
+
+    span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background-color: $hdr-text-main;
+      border-radius: 2px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-origin: center;
+    }
+
+    // Animación al pasar el mouse (Las líneas se separan ligeramente)
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+
+      span:nth-child(1) { transform: translateY(-1px); }
+      span:nth-child(3) { transform: translateY(1px); }
+    }
+
+    // Accesibilidad por teclado
+    &:focus-visible {
+      outline: 2px solid $hdr-accent;
+      outline-offset: 2px;
+    }
+  }
+
+  // ----------------------------------------
+  // 🏷️ MARCA / LOGO
+  // ----------------------------------------
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none; // Por si decides convertir el brand en un <a>
+    cursor: pointer;
+
+    // Pequeña transición si actua como botón de "Home"
+    transition: opacity $hdr-transition;
+    &:hover { opacity: 0.85; }
+  }
+
+  &__logo {
+    height: 36px;
+    width: auto;
+    object-fit: contain; // Protege la proporción de la imagen
+  }
+
+  &__text-group {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  &__title {
+    font-size: 14px;
+    font-weight: 700;
+    color: $hdr-text-main;
+    margin: 0;
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+  }
+
+  &__sub {
+    font-size: 10px;
+    color: $hdr-accent;
+    margin: 0;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  // ----------------------------------------
+  // 👉 SECCIÓN DERECHA
+  // ----------------------------------------
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  // Badges informativos o de estado
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.08);
+    color: $hdr-text-main;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    letter-spacing: 0.02em;
+    white-space: nowrap; // Evita que el badge se rompa en dos líneas
+    transition: transform 0.2s ease, background-color 0.2s ease;
+
+    // Efecto al pasar el cursor (si son interactivos)
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.12);
+      transform: translateY(-1px);
+    }
+
+    // Modificador: Versión Amarilla (Alta prioridad)
+    &--yellow {
+      background-color: $hdr-accent;
+      color: $hdr-bg;
+      border-color: $hdr-accent;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba($hdr-accent, 0.3); // Le da un brillo especial
+
+      &:hover {
+        background-color: lighten($hdr-accent, 5%);
+      }
+    }
+  }
+
+  // ----------------------------------------
+  // 📱 RESPONSIVE DESIGN
+  // ----------------------------------------
+  @media (max-width: 600px) {
+    &__sub {
+      display: none; // Ocultamos el subtítulo en móviles para ganar espacio
+    }
+
+    &__title {
+      font-size: 13px;
+    }
+
+    &__badge {
+      // En móviles muy pequeños, ocultamos badges estándar para evitar desbordes
+      // y dejamos solo los de máxima prioridad (--yellow)
+      &:not(.header__badge--yellow) {
+        display: none;
+      }
+    }
+  }
+}

@@ -1,0 +1,235 @@
+<div class="config-wrapper">
+  <div class="config-header">
+    <div class="config-title">
+      <h2>⚙️ Configuración del Sistema</h2>
+      <p>Administra los enlaces maestros de las bases de datos.</p>
+    </div>
+  </div>
+
+  <div class="config-body">
+
+    <!-- ── Padrón ── -->
+    <div class="config-card config-card--highlight-red">
+      <div class="card-icon padron-icon">⊞</div>
+      <div class="card-content">
+        <h3>URL del Padrón de Predios</h3>
+        <p>Enlace de exportación CSV que alimenta la tabla principal.</p>
+        @if (isEditing()) {
+        <div class="input-group">
+          <input type="text" [ngModel]="editPadron()" (ngModelChange)="editPadron.set($event)"
+            placeholder="https://docs.google.com/spreadsheets/d/...">
+        </div>
+        } @else {
+        <div class="url-display">{{ padronUrl() }}</div>
+        }
+      </div>
+    </div>
+
+    <!-- ── Sheet de Memorias ── -->
+    <div class="config-card config-card--highlight-yellow">
+      <div class="card-icon memoria-icon">📤</div>
+      <div class="card-content">
+        <h3>URL del Script — Envío de Memorias</h3>
+        <p>
+          URL del Google Apps Script desplegado como Web App. Recibe los datos del
+          Visor de Detalles y los escribe en el Google Sheet de memorias descriptivas.
+        </p>
+        @if (isEditing()) {
+        <div class="input-group">
+          <input type="text" [ngModel]="editMemoriaSheet()" (ngModelChange)="editMemoriaSheet.set($event)"
+            placeholder="https://script.google.com/macros/s/.../exec">
+          <small class="hint hint--info">
+            ℹ️ Debe ser un Apps Script desplegado como "Web App" con acceso "Cualquier persona".
+          </small>
+        </div>
+        } @else {
+        <div class="url-display">{{ memoriaSheetUrl() }}</div>
+        }
+      </div>
+    </div>
+
+    <!-- ── Carpeta Excel en Drive ── -->
+    <div class="config-card config-card--highlight-green">
+      <div class="card-icon carpeta-icon">📁</div>
+      <div class="card-content">
+        <h3>ID de Carpeta Excel en Drive</h3>
+        <p>
+          ID de la carpeta de Google Drive donde se guardarán los archivos
+          Excel generados automáticamente al subir una fila del padrón.
+        </p>
+        @if (isEditing()) {
+        <div class="input-group">
+          <input type="text" [ngModel]="editCarpetaExcelId()" (ngModelChange)="editCarpetaExcelId.set($event)"
+            placeholder="ID de carpeta, ej: 15yU2MBbFNfjWA0DCH0tU1qTqJFw98VBm">
+          <small class="hint hint--info">
+            ℹ️ Puedes encontrar el ID en la URL de la carpeta de Drive:
+            drive.google.com/drive/folders/<strong>ID_AQUÍ</strong>
+          </small>
+        </div>
+        } @else {
+        <div class="url-display">{{ carpetaExcelId() }}</div>
+        }
+      </div>
+    </div>
+
+    <!-- ── Configuración de Hojas (Historial y Auxiliar) ── -->
+    <div class="config-card config-card--highlight-purple config-card--large">
+      <div class="card-icon sheets-icon">📊</div>
+      <div class="card-content">
+        <h3>Configuración de Hojas de Cálculo</h3>
+        <p>Define los IDs y nombres de las hojas destinadas al Historial y cálculos Auxiliares.</p>
+
+        <div class="sheets-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+          <div class="sheet-group-box" style="border: 1px solid #e0e0e0; padding: 1rem; border-radius: 8px;">
+            <h4 style="padding: 0.5rem;">Sheet Historial</h4>
+            @if (isEditing()) {
+            <div class="input-group" style="margin-bottom: 0.8rem;">
+              <label style="font-size: 0.85rem; font-weight: 600;">ID de la Hoja:</label>
+              <input type="text" [ngModel]="editsheetHistorialId()" (ngModelChange)="editsheetHistorialId.set($event)"
+                placeholder="Ej: 0">
+            </div>
+            <div class="input-group">
+              <label style="font-size: 0.85rem; font-weight: 600;">Nombre de la Hoja:</label>
+              <input type="text" [ngModel]="editsheetHistorialName()"
+                (ngModelChange)="editsheetHistorialName.set($event)" placeholder="Ej: Historial_Cambios">
+            </div>
+            } @else {
+            <div class="url-display" style="margin-bottom: 0.5rem;"><strong>ID:</strong> {{ sheetHistorialId() }}</div>
+            <div class="url-display"><strong>Nombre:</strong> {{ sheetHistorialName() }}</div>
+            }
+          </div>
+
+          <div class="sheet-group-box" style="border: 1px solid #e0e0e0; padding: 1rem; border-radius: 8px;">
+            <h4 style="padding: 0.5rem;">Sheet Auxiliar</h4>
+            @if (isEditing()) {
+            <div class="input-group" style="margin-bottom: 0.8rem;">
+              <label style="font-size: 0.85rem; font-weight: 600;">ID de la Hoja:</label>
+              <input type="text" [ngModel]="editsheetAuxiliarId()" (ngModelChange)="editsheetAuxiliarId.set($event)"
+                placeholder="Ej: 14253678">
+            </div>
+            <div class="input-group">
+              <label style="font-size: 0.85rem; font-weight: 600;">Nombre de la Hoja:</label>
+              <input type="text" [ngModel]="editsheetAuxiliarName()" (ngModelChange)="editsheetAuxiliarName.set($event)"
+                placeholder="Ej: Datos_Auxiliares">
+            </div>
+            } @else {
+            <div class="url-display" style="margin-bottom: 0.5rem;"><strong>ID:</strong> {{ sheetAuxiliarId() }}</div>
+            <div class="url-display"><strong>Nombre:</strong> {{ sheetAuxiliarName() }}</div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Estructura Dinámica de Carpetas ── -->
+    <div class="config-card config-card--highlight-cyan config-card--large">
+      <div class="card-icon folder-tree-icon">🌿</div>
+      <div class="card-content">
+        <h3>Estructura dinámica de carpetas en Drive</h3>
+        <p>
+          Define la jerarquía de directorios donde se guardarán los archivos.
+          Usa texto fijo o variables dinámicas entre llaves
+          (ej. <code class="inline-code">&#123;codigo&#125;</code>,
+          <code class="inline-code">&#123;proyecto&#125;</code>).
+        </p>
+
+        <!-- Árbol -->
+        <div class="folder-tree">
+
+          <!-- Raíz fija -->
+          <div class="tree-row tree-row--root">
+            <span class="tree-icon">📁</span>
+            <span class="tree-label tree-label--root">ID Carpeta raíz (Drive)</span>
+          </div>
+
+          <!-- Niveles dinámicos -->
+          @for (nivel of editEstructura(); track $index) {
+          <div class="tree-row" [class.tree-row--last]="$last">
+
+            <span class="tree-connector">{{ $last ? '└──' : '├──' }}</span>
+            <span class="tree-icon">📁</span>
+
+            @if (isEditing()) {
+            <div class="tree-input-group">
+              <input type="text" class="tree-input" [ngModel]="nivel" (ngModelChange)="actualizarNivel($index, $event)"
+                (focus)="nivelEnfocado.set($index)" (blur)="nivelEnfocado.set(null)"
+                placeholder="Nombre fijo o {variable}" />
+              <button type="button" class="btn-remove-level" (click)="eliminarNivel($index)"
+                title="Eliminar este nivel">✕</button>
+            </div>
+            } @else {
+            <span class="tree-label" [class.tree-label--variable]="nivel.startsWith('{') && nivel.endsWith('}')">
+              {{ nivel || '(sin nombre)' }}
+            </span>
+            }
+
+            @if ($last) {
+            <div class="tree-file-row">
+              <span class="tree-connector tree-connector--file">└──</span>
+              <span class="tree-icon">📄</span>
+              <span class="tree-label tree-label--file">[Archivo.xlsx]</span>
+            </div>
+            }
+
+          </div>
+          }
+
+          @if (editEstructura().length === 0) {
+          <div class="tree-empty">
+            Los archivos se guardarán directamente en la carpeta raíz.
+          </div>
+          }
+
+        </div>
+
+        <!-- Controles (solo en edición) -->
+        @if (isEditing()) {
+        <div class="tree-controls">
+          <button type="button" class="btn-add-level" (click)="agregarNivel()">
+            ➕ Añadir Subnivel
+          </button>
+          <div class="variable-badges">
+            <span class="variable-badges__hint">Clic para insertar:</span>
+            <button type="button" class="badge" (click)="inyectarVariable('{codigo}')">&#123;codigo&#125;</button>
+            <button type="button" class="badge" (click)="inyectarVariable('{proyecto}')">&#123;proyecto&#125;</button>
+            <button type="button" class="badge" (click)="inyectarVariable('{fecha}')">&#123;fecha&#125;</button>
+            <button type="button" class="badge" (click)="inyectarVariable('{año}')">&#123;año&#125;</button>
+          </div>
+        </div>
+        }
+
+        <!-- Vista previa de ruta -->
+        <div class="path-preview">
+          <span class="path-preview__label">Vista previa:</span>
+          <span class="path-preview__seg">Raíz</span>
+          @for (nivel of (isEditing() ? editEstructura() : estructuraCarpetas()); track $index) {
+          <span class="path-preview__sep">/</span>
+          <span class="path-preview__seg"
+            [class.path-preview__seg--variable]="nivel.startsWith('{') && nivel.endsWith('}')">{{ nivel || '…' }}</span>
+          }
+          <span class="path-preview__sep">/</span>
+          <span class="path-preview__file">[Archivo.xlsx]</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="config-footer">
+    @if (mensaje()) {
+    <div class="mensaje-exito">✔️ {{ mensaje() }}</div>
+    }
+
+    <div class="action-buttons">
+      @if (!isEditing()) {
+      <button class="btn-edit" (click)="activarEdicion()">✏️ Editar Enlaces</button>
+      <button class="btn-default" (click)="restaurarDefaults()">🔄 Restaurar desde config.json</button>
+      } @else {
+      <button class="btn-cancel" (click)="cancelarEdicion()" [disabled]="loading()">✖ Cancelar</button>
+      <button class="btn-save" (click)="guardarConfiguracion()" [disabled]="loading()">
+        {{ loading() ? 'Guardando...' : 'Guardar Cambios' }}
+      </button>
+      }
+    </div>
+  </div>
+</div>

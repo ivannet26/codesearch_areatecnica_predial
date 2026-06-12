@@ -1,0 +1,22 @@
+<aside class="sidebar" [class.sidebar--collapsed]="collapsed()">
+  <nav class="sidebar__nav">
+    <ul>
+      @for (item of navItems; track item.route) {
+        <li>
+          <a [routerLink]="item.route" routerLinkActive="active" class="sidebar__link">
+            <span class="sidebar__icon">{{ item.icon }}</span>
+            @if (!collapsed()) {
+              <span class="sidebar__label">{{ item.label }}</span>
+            }
+          </a>
+        </li>
+      }
+    </ul>
+  </nav>
+  @if (!collapsed()) {
+    <div class="sidebar__footer">
+      <p>PROVÍAS NACIONAL</p>
+      <p>MTC - Perú</p>
+    </div>
+  }
+</aside>

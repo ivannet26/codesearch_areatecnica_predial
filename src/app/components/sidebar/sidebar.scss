@@ -1,0 +1,168 @@
+// ==========================================
+// 🧭 VARIABLES DEL SIDEBAR
+// ==========================================
+
+$sb-bg: #0F172A; // Azul pizarra muy oscuro
+$sb-bg-hover: #1E293B; // Fondo para hover, active y bordes
+$sb-border: #1E293B;
+
+// Textos
+$sb-text-main: #F8FAFC;
+$sb-text-muted: #94A3B8;
+$sb-text-footer: #475569;
+
+// Acento Provías
+$sb-accent: #F59E0B;
+
+// Dimensiones y Animaciones
+$sb-width-expanded: 260px;
+$sb-width-collapsed: 80px;
+$sb-transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); // Animación más natural y fluida
+
+// ==========================================
+// 🗄️ COMPONENTE SIDEBAR
+// ==========================================
+
+.sidebar {
+  width: $sb-width-expanded;
+  height: 100vh;
+  background-color: $sb-bg;
+  color: $sb-text-main;
+  display: flex;
+  flex-direction: column;
+  transition: width $sb-transition;
+  border-right: 1px solid $sb-border;
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+  z-index: 100; // Asegura que esté por encima del main content
+
+  // ----------------------------------------
+  // 🔄 ESTADO COLAPSADO
+  // ----------------------------------------
+  &--collapsed {
+    width: $sb-width-collapsed;
+
+    .sidebar__footer {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none; // Evita clics fantasma cuando es invisible
+    }
+
+    .sidebar__label {
+      opacity: 0;
+      display: none; // Oculta el texto
+    }
+
+    .sidebar__link {
+      padding: 1.2rem 0; // Quitamos el padding lateral
+      justify-content: center; // Centramos el ícono en los 80px disponibles
+    }
+
+    .sidebar__icon {
+      margin-right: 0; // Eliminamos el margen que separaba al ícono del texto
+    }
+  }
+
+  // ----------------------------------------
+  // 🗺️ NAVEGACIÓN PRINCIPAL
+  // ----------------------------------------
+  &__nav {
+    flex: 1;
+    padding: 2rem 0;
+    overflow-y: auto; // Permite scroll si agregas muchos enlaces
+    overflow-x: hidden;
+
+    // Scrollbar minimalista y oscuro para el Sidebar
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: $sb-border;
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+  }
+
+  &__link {
+    display: flex;
+    align-items: center;
+    padding: 1.2rem 1.5rem;
+    color: $sb-text-muted;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border-left: 4px solid transparent;
+    white-space: nowrap; // Evita que el texto salte de línea durante la animación de colapso
+
+    // Estado Hover
+    &:hover {
+      background-color: $sb-bg-hover;
+      color: $sb-text-main;
+
+      .sidebar__icon {
+        transform: scale(1.15) rotate(-5deg); // Pequeño giro dinámico
+        color: $sb-text-main;
+      }
+    }
+
+    // Accesibilidad por teclado
+    &:focus-visible {
+      outline: none;
+      background-color: $sb-bg-hover;
+      box-shadow: inset 0 0 0 2px rgba($sb-accent, 0.4);
+    }
+
+    // Estado Activo (Página actual)
+    &.active {
+      background-color: $sb-bg-hover;
+      color: $sb-accent;
+      border-left-color: $sb-accent;
+      font-weight: 700;
+      box-shadow: inset 4px 0 10px rgba(0, 0, 0, 0.1); // Le da profundidad a la opción seleccionada
+
+      .sidebar__icon {
+        color: $sb-accent;
+        transform: none; // Reseteamos la transformación en el activo
+      }
+    }
+  }
+
+  &__icon {
+    font-size: 1.35rem;
+    margin-right: 1rem;
+    min-width: 24px;
+    text-align: center;
+    transition: transform 0.2s, color 0.2s, margin 0.3s;
+  }
+
+  // ----------------------------------------
+  // 🦶 FOOTER (Créditos / Versión)
+  // ----------------------------------------
+  &__footer {
+    padding: 1.5rem;
+    font-size: 0.75rem;
+    color: $sb-text-footer;
+    border-top: 1px solid $sb-border;
+    text-align: center;
+    font-weight: 600;
+    white-space: nowrap; // Evita que se rompa al colapsar
+    transition: opacity 0.2s ease, visibility 0.2s;
+
+    p {
+      margin: 0.3rem 0;
+      letter-spacing: 0.5px;
+    }
+  }
+}

@@ -1,0 +1,99 @@
+// ==========================================
+// 🎨 VARIABLES Y PALETA DE COLORES
+// ==========================================
+
+// Tema: Midnight & Teal (Elegante, moderno y limpio)
+$color-bg-base:      #F4F7F6; // Fondo general (Gris muy claro/menta)
+$color-bg-surface:   #FFFFFF; // Fondo para tarjetas o contenedores
+$color-primary:      #008080; // Acento principal (Verde Azulado / Teal)
+$color-primary-dark: #005959; // Hover del acento
+$color-text-main:    #2C3E50; // Texto principal (Azul medianoche oscuro)
+$color-text-muted:   #7F8C8D; // Texto secundario
+
+// Colores del Scrollbar
+$scrollbar-track:    #E2E8F0;
+$scrollbar-thumb:    #94A3B8;
+$scrollbar-thumb-hover: #64748B;
+
+// Tipografía y Transiciones
+$font-family-base:   'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+$transition-fast:    0.25s ease-in-out;
+
+
+// ==========================================
+// 🛠️ MIXINS (Código reutilizable)
+// ==========================================
+
+// Mixin para scrollbars personalizados
+@mixin custom-scrollbar($width: 8px, $height: 8px) {
+  &::-webkit-scrollbar {
+    width: $width;
+    height: $height;
+  }
+  &::-webkit-scrollbar-track {
+    background: $scrollbar-track;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: $scrollbar-thumb;
+    border-radius: 4px;
+
+    // Transición en el hover del scroll (requiere que el navegador lo soporte,
+    // pero mejora la experiencia general)
+    &:hover {
+      background: $scrollbar-thumb-hover;
+    }
+  }
+}
+
+
+// ==========================================
+// 📦 BASE Y RESET
+// ==========================================
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden; /* Corta el scroll fantasma de Windows/Chrome */
+  background-color: $color-bg-base;
+  color: $color-text-main;
+  font-family: $font-family-base;
+
+  // Mejoras en la renderización de fuentes
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  // Aplicamos el scrollbar global
+  @include custom-scrollbar();
+}
+
+// ==========================================
+// 🔤 ELEMENTOS HTML
+// ==========================================
+
+input, select, textarea, button {
+  font-family: inherit;
+  color: inherit;
+
+  // Mejora de accesibilidad al navegar con teclado
+  &:focus {
+    outline: 2px solid rgba($color-primary, 0.5);
+    outline-offset: 2px;
+  }
+}
+
+a {
+  text-decoration: none;
+  color: $color-primary;
+  transition: color $transition-fast;
+
+  &:hover,
+  &:focus {
+    color: $color-primary-dark;
+  }
+}

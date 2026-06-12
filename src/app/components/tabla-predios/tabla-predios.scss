@@ -1,0 +1,336 @@
+// ==========================================
+// 📊 VARIABLES
+// ==========================================
+
+$tbl-toolbar-bg: #1E293B;
+$tbl-toolbar-border: #334155;
+$tbl-toolbar-text: #FFFFFF;
+$tbl-toolbar-mut: #94A3B8;
+
+$tbl-header-bg: #0F172A;
+$tbl-header-text: #F8FAFC;
+$tbl-border: #E2E8F0;
+$tbl-row-bg: #FFFFFF;
+$tbl-row-stripe: #F8FAFC;
+$tbl-row-hover: #E2E8F0;
+$tbl-text-base: #334155;
+
+$tbl-accent: #F59E0B;
+$tbl-accent-dark: #D97706;
+$tbl-selected-bg: #FEF3C7;
+$tbl-selected-text: #B45309;
+
+$tbl-transition: 0.2s ease-in-out;
+
+// ==========================================
+// 🛠️ CABECERA / BARRA DE BÚSQUEDA
+// ==========================================
+
+.tabla-header {
+  margin-bottom: 1rem;
+
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+
+    .search-input {
+      padding: 0.6rem 1rem;
+      border: 1px solid $tbl-toolbar-border;
+      background-color: $tbl-toolbar-bg;
+      color: $tbl-toolbar-text;
+      border-radius: 6px;
+      flex: 1;
+      min-width: 200px;
+      max-width: 400px;
+      outline: none;
+      font-size: 0.88rem;
+      transition: border-color $tbl-transition, box-shadow $tbl-transition;
+
+      &::placeholder {
+        color: $tbl-toolbar-mut;
+      }
+
+      &:focus {
+        border-color: $tbl-accent;
+        box-shadow: 0 0 0 3px rgba($tbl-accent, 0.15);
+      }
+    }
+
+    .result-count {
+      font-size: 0.82rem;
+      color: $tbl-toolbar-mut;
+      font-weight: 600;
+      white-space: nowrap;
+      padding: 0 0.25rem;
+    }
+
+    .btn-refresh {
+      padding: 0.6rem 1.2rem;
+      background-color: $tbl-accent;
+      color: #1E293B;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.88rem;
+      transition: background-color $tbl-transition, transform 0.1s;
+      white-space: nowrap;
+
+      &:hover:not(:disabled) {
+        background-color: $tbl-accent-dark;
+        color: #FFFFFF;
+      }
+
+      &:active {
+        transform: scale(0.96);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+// ==========================================
+// ⏳ ESTADO DE CARGA
+// ==========================================
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  gap: 1rem;
+  color: $tbl-toolbar-mut;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid $tbl-border;
+  border-top-color: $tbl-accent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ==========================================
+// 📋 CONTENEDOR DE LA TABLA
+// ==========================================
+
+.table-container {
+  overflow-x: auto;
+  background-color: $tbl-row-bg;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid $tbl-border;
+  border-bottom: none;
+
+  &::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #F1F5F9;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #94A3B8;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #64748B;
+  }
+
+  table {
+    width: 100%;
+    min-width: max-content;
+    border-collapse: collapse;
+
+    th,
+    td {
+      padding: 9px 13px;
+      text-align: left;
+      font-size: 0.84rem;
+      border: 1px solid $tbl-border;
+    }
+
+    th {
+      background-color: $tbl-header-bg;
+      color: $tbl-header-text;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      text-transform: uppercase;
+      font-size: 0.73rem;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+      white-space: nowrap;
+    }
+
+    td {
+      color: $tbl-text-base;
+      background-color: inherit;
+      max-width: 280px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: background-color $tbl-transition;
+    }
+
+    tr {
+      cursor: pointer;
+      transition: background-color $tbl-transition;
+
+      &:nth-child(even) {
+        background-color: $tbl-row-stripe;
+      }
+
+      &:hover {
+        background-color: $tbl-row-hover;
+      }
+
+      &.selected {
+        background-color: $tbl-selected-bg;
+
+        td {
+          border-bottom: 2px solid $tbl-accent;
+          border-top: 2px solid $tbl-accent;
+          color: $tbl-selected-text;
+          font-weight: 600;
+        }
+      }
+    }
+
+    .empty-row {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: $tbl-toolbar-mut;
+      font-style: italic;
+      font-size: 0.9rem;
+      cursor: default;
+    }
+  }
+}
+
+// ==========================================
+// 📄 PAGINACIÓN SIMPLE
+// ==========================================
+
+.paginacion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  background: $tbl-toolbar-bg;
+  border: 1px solid $tbl-toolbar-border;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+}
+
+.pag-rango {
+  flex: 1;
+  text-align: center;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: $tbl-toolbar-mut;
+  white-space: nowrap;
+}
+
+.pag-btn {
+  padding: 0.38rem 0.85rem;
+  border-radius: 5px;
+  border: 1px solid $tbl-toolbar-border;
+  background: #0F172A;
+  color: $tbl-toolbar-text;
+  font-weight: 700;
+  font-size: 0.84rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color $tbl-transition, border-color $tbl-transition;
+
+  &:hover:not(:disabled) {
+    background: $tbl-accent;
+    color: #1E293B;
+    border-color: $tbl-accent;
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+}
+
+.pag-size {
+  padding: 0.35rem 0.5rem;
+  border-radius: 5px;
+  border: 1px solid $tbl-toolbar-border;
+  background: #0F172A;
+  color: $tbl-toolbar-text;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  margin-left: auto;
+
+  &:focus {
+    border-color: $tbl-accent;
+  }
+}
+
+// ==========================================
+// 📱 RESPONSIVE
+// ==========================================
+
+@media (max-width: 640px) {
+  .paginacion {
+    flex-wrap: wrap;
+    justify-content: center;
+
+    .pag-rango {
+      width: 100%;
+      order: -1;
+    }
+
+    .pag-size {
+      margin-left: 0;
+    }
+  }
+
+  .header-actions {
+    .search-input {
+      max-width: 100%;
+    }
+  }
+}
+
+.btn-visor {
+  background: #f59e0b;
+  color: #0f172a;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}

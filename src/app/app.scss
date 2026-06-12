@@ -1,0 +1,79 @@
+// ==========================================
+// 🏗️ VARIABLES DE LAYOUT (Estructura base)
+// ==========================================
+$layout-bg:        #F1F5F9; // Fondo gris clarito elegante
+$layout-padding:   1.25rem; // Un padding ligeramente más amplio para respirar
+$shadow-sidebar:   2px 0 12px rgba(0, 0, 0, 0.06); // Sombra más suave y difuminada
+
+// Escala de Z-Index (Para evitar el desorden de capas en el futuro)
+$z-sidebar: 100;
+$z-header:  90;
+$z-content: 10;
+
+// ==========================================
+// 🌐 HOST Y CONTENEDORES PRINCIPALES
+// ==========================================
+
+/* Evitamos que el cuerpo principal genere barras de scroll globales */
+:host {
+  display: block;
+  height: 100vh; // Alto total de la pantalla
+  width: 100%;   // 100% es más seguro que 100vw para evitar scroll horizontal fantasma
+  overflow: hidden;
+}
+
+.layout {
+  // El contenedor que envuelve a toda la aplicación
+  &-wrapper {
+    display: flex;
+    height: 100%; // Hereda del :host
+    width: 100%;
+    background-color: $layout-bg;
+  }
+
+  // La columna derecha (Header + Contenido)
+  &-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  // ✨ MAGIA: Solo el contenido interno hace scroll vertical
+  &-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: $layout-padding;
+    z-index: $z-content;
+
+    // Scroll suave para enlaces ancla si los llegas a usar
+    scroll-behavior: smooth;
+  }
+}
+
+// ==========================================
+// 🧩 COMPONENTES ANGULAR INYECTADOS
+// ==========================================
+
+/* Congelamos el Sidebar */
+app-sidebar {
+  flex-shrink: 0;
+  height: 100%;
+  z-index: $z-sidebar;
+  box-shadow: $shadow-sidebar;
+
+  // Opcional: Aseguramos que el sidebar tenga su propio contexto de apilamiento
+  position: relative;
+}
+
+/* Congelamos el Header */
+app-header {
+  flex-shrink: 0;
+  z-index: $z-header;
+  position: relative;
+
+  // Opcional: Una sombra muy leve debajo del header para separarlo del contenido
+  // box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}

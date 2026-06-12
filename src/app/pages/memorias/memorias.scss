@@ -1,0 +1,78 @@
+// ==========================================
+// 🎨 VARIABLES DEL COMPONENTE "MEMORIAS"
+// ==========================================
+// Mantenemos la identidad oscura y cálida, ideal para paneles o dashboards
+$mem-bg-tabs:    #1A2340; // Azul noche profundo
+$mem-text-muted: rgba(255, 255, 255, 0.6);
+$mem-text-hover: #FFFFFF;
+$mem-accent:     #F5A623; // Naranja / Ámbar vibrante
+$mem-transition: 0.2s ease-in-out;
+
+// ==========================================
+// 🧱 COMPONENTE: MEMORIAS
+// ==========================================
+.memorias {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+
+  &__tabs {
+    display: flex;
+    background-color: $mem-bg-tabs;
+    padding: 0 16px;
+    gap: 4px;
+
+    // Detalle: Una sombra muy suave para darle profundidad respecto al contenido
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    z-index: 10;
+  }
+
+  &__tab {
+    padding: 10px 18px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: $mem-text-muted;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+
+    // Transición fluida para color y borde
+    transition: color $mem-transition,
+                border-color $mem-transition,
+                background-color $mem-transition;
+
+    // Efecto Hover mejorado
+    &:hover {
+      color: $mem-text-hover;
+      // Detalle: Un fondo sutil para indicar que el área es clickeable
+      background-color: rgba(255, 255, 255, 0.04);
+    }
+
+    // Modificador: Estado Activo
+    &--active {
+      color: $mem-accent;
+      border-bottom-color: $mem-accent;
+
+      // Evitamos el fondo hover en el tab activo para que destaque por su color
+      &:hover {
+        background-color: transparent;
+      }
+    }
+
+    // Detalle de accesibilidad: Si el usuario navega con teclado (Tab)
+    &:focus-visible {
+      outline: 2px dashed rgba($mem-accent, 0.7);
+      outline-offset: -2px;
+    }
+  }
+
+  &__content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    // Si necesitas un fondo específico para el contenido, puedes agregarlo aquí.
+    // De lo contrario, heredará el fondo global definido en el body.
+  }
+}

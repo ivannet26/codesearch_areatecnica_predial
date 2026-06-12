@@ -1,0 +1,82 @@
+// ==========================================
+// 🎨 VARIABLES DE BOTONES DE ACCIÓN
+// ==========================================
+$btn-action-radius: 6px; // Un poco más redondeado (de 4px a 6px) para un look más moderno
+$btn-action-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+// Colores
+$color-indigo:       #6366F1;
+$color-indigo-dark:  #4F46E5;
+$color-drive:        #3B82F6;
+$color-drive-dark:   #2563EB;
+
+// ==========================================
+// 🧬 PLANTILLA BASE (Placeholder SCSS)
+// ==========================================
+// Todo lo que esté aquí dentro no se compilará como una clase extraña,
+// sino que se inyectará limpiamente en los botones que lo "extiendan".
+%btn-action-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px; // Ideal por si usas un ícono y texto juntos (ej. <i class="fa fa-download"></i> Descargar)
+  padding: 8px 12px; // Ligeramente más ancho a los lados para respirar mejor
+  font-size: 12px;
+  font-weight: 600; // Un poco más de peso para que resalte
+  white-space: nowrap;
+  color: #FFFFFF;
+  border: none;
+  border-radius: $btn-action-radius;
+  cursor: pointer;
+  transition: $btn-action-transition;
+
+  // Estado Deshabilitado (Faltaba definir cómo se ve cuando está bloqueado)
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    filter: grayscale(40%);
+  }
+
+  // Efecto de clic (Presionar)
+  &:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+}
+
+// ==========================================
+// 📥 BOTONES ESPECÍFICOS
+// ==========================================
+
+.btn-descargar-individual {
+  @extend %btn-action-base; // Hereda toda la plantilla
+  background-color: $color-indigo;
+
+  &:hover:not(:disabled) {
+    background-color: $color-indigo-dark;
+    transform: translateY(-2px); // Se eleva en lugar de solo agrandarse
+    box-shadow: 0 4px 12px rgba($color-indigo, 0.35); // Sombra del mismo tono
+  }
+
+  // Accesibilidad: Efecto de foco al navegar con teclado (Tab)
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba($color-indigo, 0.4);
+  }
+}
+
+.btn-drive {
+  @extend %btn-action-base; // Hereda toda la plantilla
+  background-color: $color-drive;
+
+  &:hover:not(:disabled) {
+    background-color: $color-drive-dark;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba($color-drive, 0.35);
+  }
+
+  // Accesibilidad: Efecto de foco al navegar con teclado (Tab)
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba($color-drive, 0.4);
+  }
+}

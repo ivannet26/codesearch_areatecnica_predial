@@ -1,0 +1,26 @@
+{
+  "defaults": {
+    "padronUrl": "https://docs.google.com/spreadsheets/d/1mKAdVvjyy9Wwr2k44dvVY8K7tI56g4JIBcX9ScHoQRY/export?format=xlsx&gid=433706277",
+    "autocadUrl": "https://docs.google.com/spreadsheets/d/1TqwNSh5oReE1kiAOvgro11FNzphiviN8Ezm7rIak_oc/export?format=xlsx",
+    "memoriaSheet": "https://script.google.com/macros/s/AKfycbyJ0Itnnn0b92FBFPnfatNHaccO4NojYla7hfwWNSZs76N4eANkZ8mEcgX5kqH5YB3MmQ/exec",
+    "carpetaExcelId": "12mTbJnLfGMC9m__1Ict0N7ruwYDHl8YE",
+    "SHEET_HISTORIAL_ID": "1RJ1jcWh7hVhQqTmmrxOFkrxA43bu4NgvdDl4Y8FgYAo",
+    "SHEET_AUXILIAR_ID": "1RJ1jcWh7hVhQqTmmrxOFkrxA43bu4NgvdDl4Y8FgYAo",
+    "SHEET_HISTORIAL_NAME": "Historial",
+    "SHEET_AUXILIAR_NAME": "Memorias",
+    "estructura": [
+      "{codigo}"
+    ]
+  },
+  "custom": {
+    "padronUrl": null,
+    "autocadUrl": null,
+    "memoriaSheet": null,
+    "carpetaExcelId": null,
+    "SHEET_HISTORIAL_ID": null,
+    "SHEET_AUXILIAR_ID": null,
+    "SHEET_HISTORIAL_NAME": null,
+    "SHEET_AUXILIAR_NAME": null,
+    "estructura": null
+  }
+}

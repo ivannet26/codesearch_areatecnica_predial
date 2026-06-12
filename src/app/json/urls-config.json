@@ -1,0 +1,19 @@
+{
+    "defaults": {
+        "padronUrl": "https://docs.google.com/spreadsheets/d/1xH8taGHg2D1jAZxrerKf_KAbYODWxwoqPvjphp_n8bE/export?format=xlsx&gid=0",
+        "autocadUrl": "https://docs.google.com/spreadsheets/d/1TqwNSh5oReE1kiAOvgro11FNzphiviN8Ezm7rIak_oc/export?format=xlsx",
+        "memoriaSheet": "https://script.google.com/macros/s/AKfycbxhQBMwASbCWaRpA1UsiTIQI9Hdj7qrFzbwbLCZPgxGcOlO3djn5_9n5GvAJTkPAQiPFw/exec",
+        "carpetaExcelId": "15yU2MBbFNfjWA0DCH0tU1qTqJFw98VBm",
+        "estructura": [
+            "{proyecto}",
+            "{codigo}"
+        ]
+    },
+    "custom": {
+        "padronUrl": null,
+        "autocadUrl": null,
+        "memoriaSheet": null,
+        "carpetaExcelId": null,
+        "estructura": null
+    }
+}

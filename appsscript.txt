@@ -1,0 +1,2604 @@
+// ============================================================
+
+//  MEMORIA DESCRIPTIVA — Apps Script  v4.0 (Visibilidad Ultra Estricta)
+
+//  Acciones:
+
+//    - escribirMemoria      → guarda datos en la hoja Memorias
+
+//    - escribirFilaPadron   → genera Excel y lo sube a Drive
+
+//    - editarPadron         → edita una celda en el padrón
+
+// ============================================================
+
+
+
+var _debugLogs = [];
+
+
+
+function _log() {
+
+  var parts = [];
+
+  for (var i = 0; i < arguments.length; i++) {
+
+    var arg = arguments[i];
+
+    try { parts.push(typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)); }
+
+    catch (_) { parts.push('[circular/error]'); }
+
+  }
+
+  var msg = parts.join(' ');
+
+  _debugLogs.push(msg);
+
+  Logger.log(msg);
+
+}
+
+// ... todo tu código existente ...
+
+function doGet(e) {
+
+  return ContentService
+
+    .createTextOutput(JSON.stringify({ ok: true, msg: 'Apps Script activo' }))
+
+    .setMimeType(ContentService.MimeType.JSON);
+
+}
+
+
+
+function doPost(e) {
+
+  _debugLogs = [];
+
+  try {
+
+    _log('=== REQUEST RAW ===', e.postData ? e.postData.contents : 'SIN BODY');
+
+    const payload = JSON.parse(e.postData.contents);
+
+    const accion = payload.accion || '';
+
+    _log('Acción recibida:', accion);
+
+
+
+    let resultado;
+
+    if (accion === 'escribirMemoria') resultado = escribirMemoria(payload);
+
+    else if (accion === 'forzarAutorizacion') resultado = forzarAutorizacion(payload);
+
+    else if (accion === 'escribirFilaPadron') resultado = escribirFilaPadron(payload);
+
+    else if (accion === 'editarPadron') resultado = editarPadron(payload);
+
+    else resultado = { ok: false, error: 'Acción no reconocida: ' + accion };
+
+
+
+    resultado.debugLogs = _debugLogs;
+
+    return ContentService.createTextOutput(JSON.stringify(resultado)).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+
+    return ContentService.createTextOutput(JSON.stringify({
+
+      ok: false, error: String(err), stack: err.stack, debugLogs: _debugLogs
+
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  }
+
+}
+
+
+
+// ============================================================
+
+//  1. ESCRIBIR MEMORIA
+
+// ============================================================
+
+function escribirMemoria(payload) {
+
+  _log('--- escribirMemoria INICIO ---');
+
+  const sheetId = payload.sheetAuxiliarId || payload.sheetHistorialId;
+
+  const sheetName = payload.sheetAuxiliarName || 'Memorias';
+
+  const datos = payload.datos || {};
+
+  if (!sheetId) return { ok: false, error: 'sheetAuxiliarId no configurado' };
+
+  const ss = SpreadsheetApp.openById(sheetId);
+
+  let sheet = ss.getSheetByName(sheetName);
+
+  if (!sheet) sheet = ss.insertSheet(sheetName);
+
+  if (sheet.getLastRow() === 0) sheet.appendRow(Object.keys(datos));
+
+  const keys = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+  const fila = keys.map(k => { const v = datos[k]; return (v === null || v === undefined) ? '' : String(v); });
+
+  sheet.appendRow(fila);
+
+  return { ok: true, msg: 'Memoria guardada en hoja ' + sheetName };
+
+}
+
+
+
+// ============================================================
+
+//  2. EDITAR PADRÓN
+
+// ============================================================
+
+function editarPadron(payload) {
+
+  _log('--- editarPadron INICIO ---');
+
+  const { codigoBuscar, cambios } = payload;
+
+  const padronId = payload.sheetPadronId;
+
+  if (!padronId) return { ok: false, error: 'sheetPadronId no configurado' };
+
+  if (!codigoBuscar) return { ok: false, error: 'codigoBuscar requerido' };
+
+  if (!cambios || Object.keys(cambios).length === 0) return { ok: true, msg: 'Sin cambios' };
+
+
+
+  const ss = SpreadsheetApp.openById(padronId);
+
+  const norm = s => String(s || '').toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/m²/g, 'm2').replace(/\s+/g, ' ');
+
+
+
+  let sheet = null, filaIdx = -1, finalHeaders = [];
+
+
+
+  for (const sh of ss.getSheets()) {
+
+    const data = sh.getDataRange().getValues();
+
+    const totalCols = data[0] ? data[0].length : 0;
+
+    if (totalCols < 3) continue;
+
+    let fdr = -1;
+
+    for (let i = 0; i < Math.min(20, data.length); i++) {
+
+      const v0 = String(data[i][0] || '').trim();
+
+      const v3 = String(data[i][3] || '').trim();
+
+      if (/^\d+$/.test(v0) && parseInt(v0) > 0 && /^[A-Z]{2,}-[A-Z]{2,}-\d+/.test(v3)) { fdr = i; break; }
+
+    }
+
+    if (fdr === -1) {
+
+      for (let i = 0; i < Math.min(20, data.length); i++) {
+
+        const v0 = String(data[i][0] || '').trim();
+
+        if (/^\d+$/.test(v0) && parseInt(v0) > 0) { fdr = i; break; }
+
+      }
+
+    }
+
+    if (fdr === -1) continue;
+
+    const usedNames = {}, headers = [];
+
+    for (let col = 0; col < totalCols; col++) {
+
+      const partes = [];
+
+      for (let rr = 0; rr < fdr; rr++) {
+
+        const cell = String(data[rr][col] || '').trim().replace(/\n/g, ' ');
+
+        if (!cell || cell.includes('▼')) continue;
+
+        if (!partes.length || partes[partes.length - 1] !== cell) partes.push(cell);
+
+      }
+
+      let nombre = partes.join(' - ') || ('__COL_' + col);
+
+      const ps = nombre.split(' - '), vis = new Set(), uni = [];
+
+      for (const p of ps) { const n = p.toLowerCase().trim(); if (!vis.has(n)) { vis.add(n); uni.push(p); } }
+
+      nombre = uni.join(' - ') || ('__COL_' + col);
+
+      const count = usedNames[nombre] || 0;
+
+      usedNames[nombre] = count + 1;
+
+      headers.push(count === 0 ? nombre : nombre + ' (' + (count + 1) + ')');
+
+    }
+
+    let codCol = headers.findIndex(h => norm(h).includes('nueva codificacion'));
+
+    if (codCol === -1) codCol = 3;
+
+    let fila = -1;
+
+    for (let i = fdr; i < data.length; i++) {
+
+      if (norm(String(data[i][codCol])) === norm(codigoBuscar)) { fila = i; break; }
+
+    }
+
+    if (fila !== -1) { sheet = sh; filaIdx = fila; finalHeaders = headers; break; }
+
+  }
+
+
+
+  if (!sheet) return { ok: false, error: 'Código "' + codigoBuscar + '" no encontrado' };
+
+
+
+  const errores = []; let editados = 0;
+
+  for (const keyFrontend of Object.keys(cambios)) {
+
+    const colIdx = finalHeaders.findIndex(h => norm(h) === norm(keyFrontend));
+
+    if (colIdx === -1) { errores.push(keyFrontend); continue; }
+
+    sheet.getRange(filaIdx + 1, colIdx + 1).setValue(cambios[keyFrontend]);
+
+    editados++;
+
+  }
+
+
+
+  if (payload.sheetHistorialId && payload.sheetHistorialName) {
+
+    try {
+
+      const ssh = SpreadsheetApp.openById(payload.sheetHistorialId);
+
+      let hoja = ssh.getSheetByName(payload.sheetHistorialName);
+
+      if (!hoja) hoja = ssh.insertSheet(payload.sheetHistorialName);
+
+      if (hoja.getLastRow() === 0) hoja.appendRow(['Fecha', 'Código', 'Campos editados', 'Detalle']);
+
+      hoja.appendRow([Utilities.formatDate(new Date(), 'America/Lima', 'dd/MM/yyyy HH:mm'), codigoBuscar, editados, Object.keys(cambios).join(', ')]);
+
+    } catch (e) { _log('Error historial:', String(e)); }
+
+  }
+
+
+
+  return { ok: true, msg: editados + ' campo(s) actualizado(s)' + (errores.length ? '. No encontrados: ' + errores.join(' | ') : ''), editados, errores, hoja: sheet.getName() };
+
+}
+
+
+function forzarAutorizacion(payload) {
+  payload = payload || {};  // ← agrega esta línea
+  const carpetaRaizId = payload.carpetaExcelId || '15yU2MBbFNfjWA0DCH0tU1qTqJFw98VBm';
+  const carpeta = DriveApp.getFolderById(carpetaRaizId);
+  const archivos = carpeta.getFiles();
+  console.log('Carpeta OK:', carpeta.getName());
+  if (archivos.hasNext()) {
+    console.log('Primer archivo:', archivos.next().getName());
+  }
+}
+
+
+// ============================================================
+
+//  3. GENERAR EXCEL Y SUBIRLO A DRIVE
+
+// ============================================================
+
+function escribirFilaPadron(payload) {
+
+  const logs = []; const t0 = new Date(); logs.push('=== INICIO ' + t0.toISOString() + ' ===');
+
+  try {
+
+    const datos = payload.memoriaCompleta || payload.filaDatos || {};
+
+    ['coordenadas', 'areasAfectadas', 'modulosAreaTechada', 'obrasComplementarias', 'plantacionesFrutales', 'plantacionesForestales', 'plantacionesCercoVivo', 'plantacionesTransitorias', 'elementosATasar', 'anexos'].forEach(k => { datos[k] = tryParse(datos[k], []); });
+
+    datos.areaRemanenteM2 = Number(datos.areaTotalPredioM2 || 0) - Number(datos.areaAfectadaTotalM2 || 0);
+
+
+
+    let estructuraCarpetas = payload.estructuraCarpetas;
+
+    if (typeof estructuraCarpetas === 'string') { try { estructuraCarpetas = JSON.parse(estructuraCarpetas); } catch (_) { estructuraCarpetas = []; } }
+
+    if (!Array.isArray(estructuraCarpetas)) estructuraCarpetas = [];
+
+    estructuraCarpetas = estructuraCarpetas.map(n => String(n).trim()).filter(n => n.length > 0);
+
+
+
+    const carpetaRaizId = payload.carpetaExcelId || '15yU2MBbFNfjWA0DCH0tU1qTqJFw98VBm';
+
+    const codigo = limpiar(datos.codigo || datos.codigoNuevo || 'SIN_CODIGO');
+
+
+
+    const carpetaDestino = resolverCarpeta(carpetaRaizId, estructuraCarpetas, datos);
+
+    const nombreArchivo = codigo + '.xlsx';
+
+    const carpetaHistorial = obtenerCarpetaHistorial(carpetaDestino);
+
+    const archivosExistentes = carpetaDestino.getFiles();
+    while (archivosExistentes.hasNext()) {
+      const archAnterior = archivosExistentes.next();
+      if (archAnterior.getName() === nombreArchivo) {
+        try {
+          const numSiguiente = siguienteNumeroHistorial(carpetaHistorial, nombreArchivo);
+          const numRomano = toRomano(numSiguiente);
+
+          // 1. Copiar al historial (esto siempre funciona si tienes acceso de lectura)
+          archAnterior.makeCopy(numRomano + ' ' + nombreArchivo, carpetaHistorial);
+
+          // 2. Intentar mover (quitar de carpeta destino) en lugar de eliminar
+          try {
+            carpetaDestino.removeFile(archAnterior); // solo desvincula, no elimina
+          } catch (eMover) {
+            // Si no se puede desvincular, intentar renombrar para que no colisione
+            try {
+              archAnterior.setName('_REEMPLAZADO_' + numRomano + '_' + nombreArchivo);
+            } catch (eRename) {
+              _log('No se pudo mover ni renombrar archivo anterior:', eRename.message);
+            }
+          }
+
+        } catch (eHist) {
+          _log('Error al archivar versión anterior:', eHist.message);
+        }
+      }
+    }
+
+    const ss = SpreadsheetApp.create('TMP_' + new Date().getTime());
+
+    const ssId = ss.getId(); const ws = ss.getActiveSheet(); ws.setName(codigo);
+
+
+
+    let errorContenido = null;
+
+    try { generarContenidoMemoria(ws, datos, logs); } catch (errC) { errorContenido = errC; }
+
+    try { escribirFilaDiagnostico(ws, datos, logs, errorContenido, t0); } catch (e) { }
+
+
+
+    SpreadsheetApp.flush();
+
+    const exportUrl = 'https://docs.google.com/spreadsheets/d/' + ssId + '/export?format=xlsx';
+
+    const token = ScriptApp.getOAuthToken();
+
+    let resp;
+
+    try { resp = fetchConReintento(exportUrl, { headers: { Authorization: 'Bearer ' + token } }, 3); } catch (errE) {
+
+      try { DriveApp.getFileById(ssId).setTrashed(true); } catch (_) { } return generarTxtError(carpetaDestino, codigo, logs, datos, errE);
+
+    }
+
+
+
+    const blob = resp.getBlob().setName(nombreArchivo).setContentType('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+    let archivo;
+
+    try { archivo = carpetaDestino.createFile(blob); } catch (errD) {
+
+      try { DriveApp.getFileById(ssId).setTrashed(true); } catch (_) { } return generarTxtError(carpetaDestino, codigo, logs, datos, errD);
+
+    }
+
+
+
+    try { DriveApp.getFileById(ssId).setTrashed(true); } catch (_) { }
+
+    if (payload.sheetHistorialId && payload.sheetHistorialName) { try { registrarEnHistorial(payload, archivo.getUrl()); } catch (e) { } }
+
+
+
+    if (errorContenido) return { ok: false, error: errorContenido.message, urlExcelParcial: archivo.getUrl() };
+
+    return { ok: true, msg: 'Archivo generado: ' + nombreArchivo, url: archivo.getUrl(), carpeta: carpetaDestino.getName() };
+
+
+
+  } catch (errG) {
+
+    try { const cb = DriveApp.getFolderById(payload.carpetaExcelId || '15yU2MBbFNfjWA0DCH0tU1qTqJFw98VBm'); return generarTxtError(cb, 'ERROR_GLOBAL', logs, payload.memoriaCompleta || {}, errG); } catch (_) { return { ok: false, error: errG.message }; }
+
+  }
+
+}
+
+
+
+function fetchConReintento(url, opciones, intentos) {
+
+  for (let i = 0; i < (intentos || 3); i++) {
+
+    try { const r = UrlFetchApp.fetch(url, opciones); if (r.getResponseCode() === 200) return r; } catch (e) { if (i === intentos - 1) throw e; }
+
+    Utilities.sleep(600 * (i + 1));
+
+  }
+
+}
+
+
+
+// ============================================================
+
+//  GENERAR CONTENIDO — EXCEL LIMPIO Y DINÁMICO
+
+// ============================================================
+
+function generarContenidoMemoria(ws, d, logs) {
+
+  logs = logs || [];
+
+
+
+  const coords = tryParse(d.coordenadas, []);
+
+  const areas = tryParse(d.areasAfectadas, []);
+
+  const modulos = tryParse(d.modulosAreaTechada, []);
+
+  const obras = tryParse(d.obrasComplementarias, []);
+
+  const frutales = tryParse(d.plantacionesFrutales, []);
+
+  const forestales = tryParse(d.plantacionesForestales, []);
+
+  const cerco = tryParse(d.plantacionesCercoVivo, []);
+
+  const transit = tryParse(d.plantacionesTransitorias, []);
+
+  const elementos = tryParse(d.elementosATasar, []);
+
+
+
+  // ── LOG DIAGNÓSTICO (puedes quitar después) ───────────────
+
+  _log('visibilidadManual RAW:', d.visibilidadManual);
+
+  _log('colindanciaNorte:', d.colindanciaNorte, '| longitudNorte:', d.longitudNorte);
+
+  _log('coords.length:', coords.length, '| areas:', JSON.stringify(areas.map(a => ({
+
+    colN: a.colindanciaNorte, coordsLen: (a.coordenadas || []).length
+
+  }))));
+
+
+
+  // ── VISIBILIDAD: solo respetar los false (ocultos manualmente) ──
+
+  // Los true del visManual se IGNORAN — los datos deciden si hay contenido
+
+  const visManualRaw = tryParse(d.visibilidadManual, {});
+
+  const visManual = {};
+
+  Object.keys(visManualRaw).forEach(k => {
+
+    const v = visManualRaw[k];
+
+    const esFalse = v === false || String(v) === 'false';
+
+    if (esFalse) visManual[k] = false;
+
+    // Los true se descartan intencionalmente
+
+  });
+
+  _log('visManual filtrado (solo false):', JSON.stringify(visManual));
+
+
+
+  function tieneDatos(val) {
+
+    if (val === null || val === undefined) return false;
+
+    if (typeof val === 'number') return val !== 0 && !isNaN(val);
+
+    if (typeof val === 'boolean') return val;
+
+    if (Array.isArray(val)) return val.length > 0;
+
+    if (typeof val === 'string') {
+
+      const str = val.trim().toLowerCase();
+
+      return str !== ''
+
+        && str !== '-'
+
+        && str !== '0'
+
+        && str !== '0.0'
+
+        && str !== '0.00'
+
+        && str !== '#ref!'
+
+        && str !== '#n/a'
+
+        && str !== '#valor!'
+
+        && str !== '#div/0!'
+
+        && str !== '#num!'
+
+        && str !== '#null!'
+
+        && str !== 'no registra'
+
+        && str !== 'false'
+
+        && str !== 'null'
+
+        && str !== 'undefined';
+
+    }
+
+    return !!val;
+
+  }
+
+
+
+  // isVis: el usuario solo puede OCULTAR (false), nunca forzar visible sin datos
+
+  function isVis(key, fallbackCond) {
+
+    if (visManual.hasOwnProperty(key) && visManual[key] === false) return false;
+
+    return !!fallbackCond;
+
+  }
+
+
+
+  function safe(val) {
+
+    if (val === null || val === undefined) return '';
+
+    const str = String(val).trim();
+
+    const invalidos = ['#ref!', '#n/a', '#valor!', '#div/0!', '#num!', '#null!', 'undefined', 'null'];
+
+    if (invalidos.includes(str.toLowerCase())) return '';
+
+    return str;
+
+  }
+
+
+
+  // ── Paleta y Estilos ──────────────────────────────────────
+
+  const AMARILLO = '#FFD700'; const VERDE = '#92D050'; const GRIS_CAB = '#D9D9D9';
+
+  const AZUL_TAB = '#BDD7EE'; const BLANCO = '#FFFFFF'; const NEGRO = '#000000';
+
+  const BS = SpreadsheetApp.BorderStyle.SOLID; const FONT = 'Arial Narrow'; const SZ = 9;
+
+
+
+  [100, 130, 90, 110, 80, 110, 110, 90, 30, 40, 80].forEach((w, i) => ws.setColumnWidth(i + 1, w));
+
+  // Estilo base a TODO el sheet: fondo blanco + bordes blancos
+  ws.getRange(1, 1, ws.getMaxRows(), ws.getMaxColumns())
+    .setBackground('#FFFFFF')
+    .setBorder(true, true, true, true, true, true, '#FFFFFF', SpreadsheetApp.BorderStyle.SOLID);
+
+  // Estilo de fuente solo al rango de trabajo
+  ws.getRange(1, 1, 500, 11)
+    .setFontFamily('Arial Narrow')
+    .setFontSize(SZ)
+    .setFontColor(NEGRO)
+    .setVerticalAlignment('middle');
+
+
+  // ── Helpers de dibujo ─────────────────────────────────────[!]
+
+  function mrg(r, c, rows, cols) { rows = rows || 1; cols = cols || 1; if (rows === 1 && cols === 1) return ws.getRange(r, c); try { ws.getRange(r, c, rows, cols).breakApart(); } catch (_) { } ws.getRange(r, c, rows, cols).merge(); return ws.getRange(r, c, rows, cols); }
+
+  function brd(rng) { try { rng.setBorder(true, true, true, true, true, true, NEGRO, BS); } catch (_) { } return rng; }
+  function brd2(rng) { try { rng.setBorder(true, true, true, true, true, true, BLANCO, BS); } catch (_) { } return rng; }
+
+  function RH(row, px) { try { ws.setRowHeight(row, px); } catch (_) { } }
+
+  function H(r, c, val, rows, cols, align) { return brd(mrg(r, c, rows, cols).setValue(val || '').setFontWeight('bold').setBackground(GRIS_CAB).setHorizontalAlignment(align || 'center').setWrap(true)); }
+
+  function HW(r, c, val, rows, cols, align) {
+    const rng = mrg(r, c, rows, cols);
+    rng.setValue(val || '')
+      .setFontWeight('bold')
+      .setBackground('#FFFFFF')
+      .setHorizontalAlignment(align || 'center')
+      .setWrap(true);
+    rng.setBorder(true, true, true, true, true, true,
+      '#000000', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    return rng;
+  }
+
+  function V(r, c, val, rows, cols, align, wrap) { const rng = mrg(r, c, rows, cols); if (val !== null && val !== undefined && val !== '') rng.setValue(val); rng.setFontWeight('normal').setBackground(BLANCO); if (align) rng.setHorizontalAlignment(align); if (wrap) rng.setWrap(true); return brd(rng); }
+
+  function V2(r, c, val, rows, cols, align, wrap) { const rng = mrg(r, c, rows, cols); if (val !== null && val !== undefined && val !== '') rng.setValue(val); rng.setFontWeight('normal').setBackground(BLANCO); if (align) rng.setHorizontalAlignment(align); if (wrap) rng.setWrap(true); return brd2(rng); }
+
+  function E(r, c, rows, cols) { return brd(mrg(r, c, rows, cols)); }
+
+  function BLANK(r, c, rs, cs) {
+    rs = rs || 1; cs = cs || 1;
+    const rng = ws.getRange(r, c, rs, cs);
+    rng.clearContent();
+    rng.setBackground('#FFFFFF');
+    rng.setBorder(true, true, true, true, true, true, '#FFFFFF', SpreadsheetApp.BorderStyle.SOLID);
+    try { if (rs > 1 || cs > 1) rng.merge(); } catch (_) { }
+  }
+
+  function SEC(row, val) { return brd(mrg(row, 1, 1, 11).setValue(val).setFontWeight('bold').setFontSize(SZ).setBackground(AMARILLO).setHorizontalAlignment('left')); }
+
+  function SECVERDE(row, val) { return brd(mrg(row, 1, 1, 11).setValue(val).setFontWeight('bold').setFontSize(SZ).setBackground(VERDE).setHorizontalAlignment('left')); }
+
+  function SUB(row, val) { return brd(mrg(row, 1, 1, 11).setValue(val).setFontWeight('bold').setFontSize(SZ).setBackground(GRIS_CAB).setHorizontalAlignment('left')); }
+
+  function TXT(row, val, wrap) { const rng = brd(mrg(row, 1, 1, 11).setValue(val || '').setFontWeight('normal').setBackground(BLANCO).setHorizontalAlignment('left')); if (wrap) rng.setWrap(true); return rng; }
+
+  function TXTNB(row, val, wrap) { const rng = mrg(row, 1, 1, 11).setValue(val || '').setFontWeight('normal').setBackground(BLANCO).setHorizontalAlignment('left'); if (wrap) rng.setWrap(true); return rng; }
+
+  function AZUL(r, c, val, rows, cols, align) { return brd(mrg(r, c, rows, cols).setValue(val || '').setFontWeight('bold').setBackground(AZUL_TAB).setHorizontalAlignment(align || 'center').setWrap(true)); }
+
+  function SEP(row) { RH(row, 20); }
+
+
+
+  // ── Helpers de tablas ─────────────────────────────────────
+
+  function tablaCoordenadasUTM(startRow) {
+
+    RH(startRow, 20); RH(startRow + 1, 18); E(startRow, 1, 2, 1);
+
+    H(startRow, 2, 'VÉRTICE', 2, 1, 'center');
+
+    H(startRow, 3, 'LADO', 2, 1, 'center');
+
+    H(startRow, 4, 'DISTANCIA', 2, 1, 'center');
+
+    H(startRow, 5, 'ÁNG. INTERNO', 2, 1, 'center');
+
+    AZUL(startRow, 6, 'COORDENADAS UTM WGS 84', 1, 2, 'center');
+
+    E(startRow, 8, 2, 4);
+
+    H(startRow + 1, 6, 'ESTE (X)', 1, 1, 'center');
+
+    H(startRow + 1, 7, 'NORTE (Y)', 1, 1, 'center');
+
+  }
+
+
+
+  function filaCoord(row, c) {
+
+    RH(row, 25); E(row, 1, 1, 1);
+
+    V(row, 2, c.vertice, 1, 1, 'center');
+
+    V(row, 3, c.lado, 1, 1, 'center');
+
+    V(row, 4, num(c.distancia), 1, 1, 'center');
+
+    V(row, 5, c.angulo || '', 1, 1, 'center');
+
+    V(row, 6, num(c.esteX), 1, 1, 'center');
+
+    V(row, 7, num(c.norteY), 1, 1, 'center');
+
+    E(row, 8, 1, 4);
+
+  }
+
+
+
+  function tablaPlantasHeader(row) {
+
+    RH(row, 25);
+
+    H(row, 1, 'Nombre científico', 1, 1, 'center').setBackground('#E2EFD9');
+
+    H(row, 2, 'Nombre común', 1, 2, 'center').setBackground('#E2EFD9');
+
+    H(row, 4, 'Variedad', 1, 1, 'center').setBackground('#E2EFD9');
+
+    H(row, 5, 'Edad', 1, 1, 'center').setBackground('#E2EFD9');
+
+    H(row, 6, 'Unidad de medida', 1, 1, 'center').setBackground('#E2EFD9');
+
+    H(row, 7, 'Cantidad', 1, 1, 'center').setBackground('#E2EFD9');
+
+    H(row, 8, 'Utilidad', 1, 1, 'center').setBackground('#E2EFD9');
+
+    H(row, 9, 'Observaciones', 1, 3, 'center').setBackground('#E2EFD9');
+
+  }
+
+  function tablaPlantasFila(row, p) {
+
+    RH(row, 25);
+
+    V(row, 1, p.nombreCientifico || '', 1, 1, 'center');
+
+    V(row, 2, p.nombreComun || '', 1, 2, 'center');
+
+    V(row, 4, p.variedad || '', 1, 1, 'center');
+
+    V(row, 5, p.edad || '', 1, 1, 'center');
+
+    V(row, 6, p.unidadMedida || '', 1, 1, 'center');
+
+    V(row, 7, num(p.cantidad), 1, 1, 'center');
+
+    V(row, 8, p.utilidad || '', 1, 1, 'center');
+
+    V(row, 9, p.observaciones || '-', 1, 3, 'center', true);
+
+  }
+
+
+
+  let r = 1;
+
+
+
+  // ═══════════════════════════════════════════════════════════
+
+  //  CABECERA
+
+  // ═══════════════════════════════════════════════════════════
+
+  RH(r, 20);
+
+  mrg(r, 1, 2, 7).setValue('MEMORIA DESCRIPTIVA DEL EXPEDIENTE TÉCNICO LEGAL')
+
+    .setFontWeight('bold').setFontSize(12).setFontFamily('Arial Narrow').setBackground(GRIS_CAB).setHorizontalAlignment('center');
+
+  brd(ws.getRange(r, 1, 1, 7));
+
+  H(r, 8, 'CÓDIGO', 1, 4, 'center'); r++;
+
+  RH(r, 22);
+
+  mrg(r, 8, 1, 4).setValue(d.codigo || '').setFontWeight('bold').setFontSize(10).setFontFamily('Arial Narrow')
+    .setBackground(BLANCO).setHorizontalAlignment('center').setVerticalAlignment('middle');
+  brd(ws.getRange(r, 8, 1, 4)); r++;
+
+  if (isVis('f_proyecto', tieneDatos(d.proyecto))) {
+
+    RH(r, 56);
+
+    mrg(r, 1, 1, 1).setValue('PROYECTO :')
+      .setFontWeight('bold').setFontSize(SZ).setFontFamily(FONT)
+      .setBackground(BLANCO).setHorizontalAlignment('left').setVerticalAlignment('middle');
+
+    ws.getRange(r, 1, 1, 1).setBorder(false, false, false, false, false, false);
+
+    mrg(r, 2, 1, 10).setValue(safe(d.proyecto) || '')
+      .setFontWeight('bold').setFontSize(10).setFontFamily('Arial Narrow')
+      .setBackground(BLANCO).setHorizontalAlignment('center').setVerticalAlignment('middle').setWrap(true);
+    ws.getRange(r, 2, 1, 10).setBorder(false, false, false, false, false, false);
+
+    r++;
+
+  }
+
+
+
+  // ═══════════════════════════════════════════════════════════
+
+  //  SECCIÓN 1 — CONDICIÓN LEGAL
+
+  // ═══════════════════════════════════════════════════════════
+
+  const has1 = tieneDatos(d.condicionJuridica) || tieneDatos(d.nombreTitular1)
+
+    || tieneDatos(d.representanteLegal) || tieneDatos(d.partidaRegistral);
+
+
+
+  const vis1_condJuridica = isVis('f_condJuridica', tieneDatos(d.condicionJuridica));
+
+  const vis1_repLegal = isVis('f_repLegal', tieneDatos(d.representanteLegal));
+
+  const vis1_docsTit = isVis('blk_docsTit', tieneDatos(d.partidaRegistral) || tieneDatos(d.documentoTitularidad));
+
+  const vis1_sujetosPasivos = isVis('sub_sujetosPasivos', tieneDatos(d.nombreTitular1));
+
+
+
+  const tits = [
+
+    [d.nombreTitular1, d.dniRuc1, d.estadoCivil1],
+
+    [d.nombreTitular2, d.dniRuc2, d.estadoCivil2],
+
+    [d.nombreTitular3, d.dniRuc3, d.estadoCivil3],
+
+    [d.nombreTitular4, d.dniRuc4, d.estadoCivil4],
+
+    [d.nombreTitular5, d.dniRuc5, d.estadoCivil5],
+
+    [d.nombreTitular6, d.dniRuc6, d.estadoCivil6],
+
+    [d.nombreTitular7, d.dniRuc7, d.estadoCivil7],
+
+    [d.nombreTitular8, d.dniRuc8, d.estadoCivil8],
+
+  ];
+
+  const visTitulares = tits.map((t, i) => isVis('blk_titular' + (i + 1), tieneDatos(t[0])));
+
+  const hayTitulares = visTitulares.some(v => v);
+
+
+
+  const real1 = vis1_condJuridica || vis1_sujetosPasivos || hayTitulares || vis1_repLegal || vis1_docsTit;
+
+
+
+  if (isVis('tab_sec_1', real1)) {
+
+    if (isVis('tit_sec1', true)) { RH(r, 20); SEC(r, '1. CONDICIÓN LEGAL'); r++; SEP(r); r++; }
+
+
+
+    if (vis1_condJuridica) {
+
+      RH(r, 30);
+      RH(r + 1, 20);
+      mrg(r, 1, 1, 2).setValue('CONDICIÓN JURÍDICA').setFontWeight('bold').setBackground(GRIS_CAB)
+
+        .setHorizontalAlignment('left').setVerticalAlignment('middle');
+
+      brd(ws.getRange(r, 1, 1, 2));
+
+      V(r, 3, safe(d.condicionJuridica) || '', 1, 6, 'left');
+
+      H(r, 9, 'DNI / RUC', 1, 3, 'center'); r++;
+    }
+
+    /*if (vis1_sujetosPasivos) {
+
+      RH(r, 18);
+
+      brd(mrg(r, 1, 1, 11).setValue('IDENTIFICACIÓN DE SUJETOS PASIVOS (TITULARES)')
+
+        .setFontWeight('bold').setBackground(GRIS_CAB).setHorizontalAlignment('left'));
+
+      r++;
+
+    }*/
+
+    tits.forEach((t, i) => {
+
+      if (visTitulares[i]) {
+
+        RH(r, 18);
+
+        H(r, 1, 'NOMBRE TITULAR ' + (i + 1), 1, 2, 'left');
+
+        V(r, 3, safe(t[0]) || '', 1, 6, 'left');
+
+        V(r, 9, safe(t[1]) || '', 1, 3, 'center');
+
+        r++;
+
+      }
+
+    });
+
+
+
+    if (vis1_repLegal) {
+
+      RH(r, 18);
+
+      H(r, 1, 'REPRESENTANTE LEGAL', 1, 2, 'left');
+
+      V(r, 3, safe(d.representanteLegal) || '-', 1, 9, 'left');
+
+      r++;
+
+    }
+
+
+
+    if (vis1_docsTit) {
+
+      RH(r, 20); RH(r + 1, 18); RH(r + 2, 18);
+
+      mrg(r, 1, 3, 2).setValue('DOCUMENTO QUE ACREDITA\nTITULARIDAD DEL PREDIO')
+
+        .setFontWeight('bold').setBackground(GRIS_CAB).setFontColor(NEGRO)
+
+        .setHorizontalAlignment('center').setVerticalAlignment('middle').setWrap(true);
+
+      brd(ws.getRange(r, 1, 3, 2));
+
+      V(r, 3, safe(d.documentoTitularidad) || safe(d.condicionJuridica) || '', 1, 9, 'left');
+
+      H(r + 1, 3, 'N°', 1, 1, 'center');
+
+      V(r + 1, 4, safe(d.partidaRegistral) || '-', 1, 1, 'center');
+
+      H(r + 1, 5, 'FECHA DE EMISIÓN', 1, 2, 'center');
+
+      V(r + 1, 7, safe(d.fechaEmision) || 'NO REGISTRA', 1, 5, 'center');
+
+      H(r + 2, 3, 'ENTIDAD', 1, 1, 'center');
+
+      V(r + 2, 4, safe(d.entidad) || 'SUNARP', 1, 8, 'center');
+
+      r += 3; SEP(r); r++;
+
+    }
+
+  }
+
+
+
+  // ═══════════════════════════════════════════════════════════
+
+  //  SECCIÓN 2 — DATOS DEL SOLICITANTE
+
+  // ═══════════════════════════════════════════════════════════
+
+  const has2 = tieneDatos(d.entidadSolicitante);
+
+  const vis2_ent = isVis('f_entSolicitante', has2);
+
+  const real2 = vis2_ent;
+
+
+
+  if (isVis('tab_sec_2', real2)) {
+
+    if (isVis('tit_sec2', real2)) { RH(r, 20); SEC(r, '2. DATOS DEL SOLICITANTE'); r++; SEP(r); r++; }
+
+    if (vis2_ent) {
+
+      RH(r, 18);
+
+      H(r, 1, 'ENTíDAD', 1, 2, 'center');
+
+      V(r, 3, safe(d.entidadSolicitante) || '', 1, 9, 'left');
+
+      r++; SEP(r); r++;
+
+    }
+
+  }
+
+
+
+  // ═══════════════════════════════════════════════════════════
+
+  //  SECCIÓN 3 — DATOS GENERALES DEL PREDIO
+
+  // ═══════════════════════════════════════════════════════════
+
+  const has3datosGen = tieneDatos(d.progresivaInicio) || tieneDatos(d.tipo)
+
+    || tieneDatos(d.zonificacion) || tieneDatos(d.usoActual);
+
+  const has3ubicacion = tieneDatos(d.unidadCatastral) || tieneDatos(d.denominacion)
+
+    || tieneDatos(d.distrito) || tieneDatos(d.provincia)
+
+    || tieneDatos(d.departamento);
+
+
+
+  const vis3_datosGen = isVis('blk_datosGen', has3datosGen);
+
+  const vis3_ubicacion = isVis('blk_ubicacion', has3ubicacion);
+
+  const real3 = vis3_datosGen || vis3_ubicacion;
+
+
+
+  if (isVis('tab_sec_3', real3)) {
+
+    if (isVis('tit_sec3', true)) { RH(r, 20); SEC(r, '3. DATOS GENERALES DEL PREDIO'); r++; SEP(r); r++; }
+
+
+
+    if (vis3_datosGen) {
+
+      RH(r, 18);
+
+      H(r, 1, 'PROGRESIVA', 1, 1, 'center'); H(r, 2, 'INICIO (km)', 1, 1, 'center');
+
+      V(r, 3, safe(d.progresivaInicio) || '', 1, 2, 'center');
+
+      H(r, 5, 'FINAL (km)', 1, 2, 'center');
+
+      V(r, 7, safe(d.progresivaFinal) || '', 1, 1, 'center');
+
+      H(r, 8, 'LADO', 1, 1, 'center');
+
+      V(r, 9, safe(d.lado) || '', 1, 3, 'center'); r++;
+
+
+
+      [['TIPO', d.tipo], ['ZONIFICACIÓN', d.zonificacion], ['USO ACTUAL', d.usoActual]].forEach(([lbl, val]) => {
+
+        if (tieneDatos(val)) { RH(r, 18); H(r, 1, lbl, 1, 2, 'left'); V(r, 3, safe(val), 1, 9, 'left'); r++; }
+
+      });
+
+    }
+
+
+
+    if (vis3_ubicacion) {
+
+      const sectores = [d.sector1, d.sector2, d.sector3, d.sector4].filter(v => tieneDatos(v)).join(' / ');
+
+      const ubDatos = [
+
+        ['UNIDAD CATASTRAL', d.unidadCatastral],
+
+        ['DENOMINACIÓN', d.denominacion],
+
+        ['SECTOR', sectores],
+
+        ['DISTRITO', d.distrito],
+
+        ['PROVINCIA', d.provincia],
+
+        ['DEPARTAMENTO', d.departamento],
+
+        ['REFERENCIA (*)', d.referencia],
+
+        ['VÍA', d.via],
+
+        ['MANZANA', d.manzana],
+
+        ['LOTE', d.lote],
+
+      ].filter(([, val]) => tieneDatos(val));
+
+
+
+      if (ubDatos.length > 0) {
+
+        const ubStart = r;
+
+        ubDatos.forEach(() => { RH(r, 18); r++; });
+
+        mrg(ubStart, 1, ubDatos.length, 1).setValue('UBICACIÓN')
+
+          .setFontWeight('bold').setBackground(GRIS_CAB)
+
+          .setHorizontalAlignment('center').setVerticalAlignment('middle');
+
+        brd(ws.getRange(ubStart, 1, ubDatos.length, 1));
+
+        ubDatos.forEach(([lbl, val], i) => {
+
+          H(ubStart + i, 2, lbl, 1, 1, 'left');
+
+          V(ubStart + i, 3, safe(val), 1, 9, 'left');
+
+        });
+
+        SEP(r); r++;
+
+      }
+
+    }
+
+  }
+
+
+
+  // ═══════════════════════════════════════════════════════════
+
+  //  SECCIÓN 4 — DESCRIPCIÓN DEL PREDIO MATRIZ
+
+  // ═══════════════════════════════════════════════════════════
+
+  const has41 = tieneDatos(d.areaMatrizM2);
+
+
+
+  // Solo contar colindancias con texto real, NO longitudes 0
+
+  const has42 = [d.colindanciaNorte, d.colindanciaSur, d.colindanciaEste, d.colindanciaOeste]
+
+    .some(v => tieneDatos(v));
+
+  const has43 = Array.isArray(coords) && coords.length > 0;
+
+
+
+  const vis41 = isVis('blk_4_1', has41);
+
+  const vis42 = isVis('blk_4_2', has42);
+
+  const vis43 = isVis('blk_4_3', has43);
+
+  const real4 = vis41 || vis42 || vis43;
+
+
+
+  if (isVis('tab_sec_4', real4)) {
+
+    if (isVis('tit_sec4', real4)) { RH(r, 20); SEC(r, '4. DESCRIPCIÓN DEL PREDIO (MATRIZ)'); r++; SEP(r); r++; }
+
+
+
+    if (vis41) {
+
+      SUB(r, '4.1 ÁREA DEL PREDIO (MATRIZ)'); r++;
+
+      TXT(r, 'EN CONCORDANCIA CON LO INDICADO EN EL PLANO N° 04, EL ÁREA MATRIZ DEL PREDIO ES:', true); r++;
+
+      SEP(r); r++;
+
+      RH(r, 20);
+
+      H(r, 2, 'DESCRIPCIÓN', 1, 3, 'center');
+
+      H(r, 5, 'UNIDAD', 1, 1, 'center');
+
+      H(r, 6, 'ÁREA', 1, 3, 'center');
+
+      BLANK(r, 9, 1, 3); r++;
+
+      RH(r, 18);
+
+      V(r, 2, 'ÁREA MATRIZ', 1, 3, 'center');
+
+      V(r, 5, 'm²', 1, 1, 'center');
+
+      V(r, 6, num(d.areaMatrizM2), 1, 3, 'center');
+
+      BLANK(r, 9, 1, 3); r++;
+
+      // Fila ÁREA TOTAL — solo si el dato existe Y es distinto de areaMatrizM2
+      if (tieneDatos(d.areaTotalPredioM2) &&
+        parseFloat(d.areaTotalPredioM2) > 0 &&
+        parseFloat(d.areaTotalPredioM2) !== parseFloat(d.areaMatrizM2)) {
+        RH(r, 18);
+        V(r, 2, 'REA DE DOCUMENTO', 1, 3, 'center');
+        V(r, 5, 'm²', 1, 1, 'center');
+        V(r, 6, (tieneDatos(d.areaTotalPredioM2) ? num(d.areaTotalPredioM2) : '-'), 1, 3, 'center');
+        BLANK(r, 9, 1, 3); r++;
+      }
+
+      SEP(r); r++;
+
+    }
+
+
+
+    if (vis42) {
+
+      SUB(r, '4.2 COLINDANCIAS Y LINDEROS DEL PREDIO (MATRIZ)'); r++;
+
+      SEP(r); r++;
+
+      TXT(r, 'EN CONCORDANCIA CON LO INDICADO EN EL PLANO N° 04, LAS COLINDANCIAS Y LINDEROS DEL PREDIO SON:', true); r++;
+
+      SEP(r); r++;
+
+      BLANK(r, 1, 1, 1);
+
+      H(r, 2, 'LÍMITE', 1, 1, 'center');
+
+      H(r, 3, 'COLINDANCIA', 1, 5, 'center');
+
+      H(r, 8, 'LONGITUD (m)', 1, 4, 'center'); r++;
+
+      [
+
+        ['NORTE', d.colindanciaNorte, d.longitudNorte],
+
+        ['SUR', d.colindanciaSur, d.longitudSur],
+
+        ['ESTE', d.colindanciaEste, d.longitudEste],
+
+        ['OESTE', d.colindanciaOeste, d.longitudOeste],
+
+      ].forEach(([lim, col, lon]) => {
+
+        BLANK(r, 1, 1, 1);
+
+        H(r, 2, lim, 1, 1, 'center');
+
+        V(r, 3, safe(col) || '', 1, 5, 'left', true);
+
+        // Mostrar longitud solo si no es 0
+
+        V(r, 8, tieneDatos(lon) ? num(lon) : '', 1, 4, 'center');
+
+        r++;
+
+      });
+
+      SEP(r); r++;
+
+    }
+
+
+
+    if (vis43) {
+
+      SUB(r, '4.3. CUADRO DE COORDENADAS DEL PREDIO WGS84'); r++;
+
+      SEP(r); r++;
+
+      TXT(r, 'SEGÚN LO INDICADO EN EL PLANO MATRIZ N°04, LAS COORDENADAS DEL ÁREA MATRIZ SON:', true); r++;
+
+      SEP(r); r++;
+
+      tablaCoordenadasUTM(r); r += 2;
+
+      coords.forEach(c => { filaCoord(r, c); r++; });
+
+      SEP(r); r++;
+
+    }
+
+  }
+
+
+
+  // ═══════════════════════════════════════════════════════════
+
+  //  SECCIÓN 5 — ENTORNO
+
+  // ═══════════════════════════════════════════════════════════
+
+  const entornoFilas = [
+
+    ['USO ACTUAL', d.usoActualEntorno || d.usoActual],
+
+    ['TOPOGRAFIA', d.topografia],
+
+    ['PENDIENTE', d.pendiente],
+
+    ['ACCESIBILIDAD', d.accesibilidad],
+
+    ['TIPO DE CULTIVOS PREDOMINANTES', d.tipoCultivos],
+
+    ['TIPO DE RIEGO', d.tipoRiego],
+
+    ['CLIMA', d.clima],
+
+    ['INFRAESTRUCTURA DE RIEGO', d.infraestructuraRiego],
+
+  ].filter(([, val]) => tieneDatos(val));
+
+
+
+  const tieneEntorno = entornoFilas.length > 0;
+
+  const vis5_entorno = isVis('blk_entorno', tieneEntorno);
+
+  const real5 = vis5_entorno;
+
+
+
+  if (isVis('tab_sec_5', real5)) {
+
+    if (isVis('tit_sec5', real5)) { RH(r, 20); SEC(r, '5. DESCRIPCIÓN DEL ENTORNO'); r++; SEP(r); r++; }
+
+    if (vis5_entorno) {
+
+      const tipoRural = String(d.tipo || '').toLowerCase().includes('r');
+
+      SUB(r, tipoRural ? 'PREDIO RÚSTICO' : 'PREDIO URBANO'); r++;
+
+      TXT(r, 'EL ENTORNO DEL PREDIO AFECTADO SE CARACTERIZA POR LO SIGUIENTE:'); r++;
+
+      entornoFilas.forEach(([lbl, val]) => {
+
+        RH(r, 18); H(r, 1, lbl, 1, 2, 'left'); V(r, 3, safe(val), 1, 9, 'left', true); r++;
+
+      });
+
+      SEP(r); r++;
+
+    }
+
+  }
+
+
+
+  // ═══════════════════════════════════════════════════════════
+
+  //  SECCIÓN 6 — TERRENO AFECTADO
+
+  // ═══════════════════════════════════════════════════════════
+
+  const areaDirecta = parseFloat(d.areaAfectadaDirectaM2) || 0;
+
+  const areaIndirecta = parseFloat(d.areaAfectadaIndirectaM2) || 0;
+
+  const totalAfect = areaDirecta + areaIndirecta;
+
+  const areaRemanente = parseFloat(d.areaRemanenteM2) || 0;
+
+
+
+  const has61 = areaDirecta > 0 || areaIndirecta > 0 || tieneDatos(d.areaTotalPredioM2);
+
+
+
+  // Pre-calcular visibilidad de cada área afectada
+
+  const visAreas = areas.map((area, aIdx) => {
+
+    const hasColArea = [area.colindanciaNorte, area.colindanciaSur,
+
+    area.colindanciaEste, area.colindanciaOeste]
+
+      .some(v => tieneDatos(v));
+
+    const coordsArea = Array.isArray(area.coordenadas) ? area.coordenadas : [];
+
+    return {
+
+      hasCol: hasColArea,
+
+      hasCoords: coordsArea.length > 0,
+
+      coordsArea,
+
+      vis62: isVis('blk_6_2_' + aIdx, hasColArea),
+
+      vis63: isVis('blk_6_3_' + aIdx, coordsArea.length > 0),
+
+    };
+
+  });
+
+
+
+  const vis61 = isVis('blk_6_1', has61);
+
+  const has6Areas = visAreas.some(a => a.vis62 || a.vis63);
+
+  const real6 = vis61 || has6Areas;
+
+
+
+  if (isVis('tab_sec_6', real6)) {
+
+    if (isVis('tit_sec6', real6)) { RH(r, 20); SEC(r, '6. DESCRIPCIÓN DEL TERRENO AFECTADO'); r++; SEP(r); r++; }
+
+
+
+    if (vis61) {
+
+      SUB(r, '6.1 ÁREA DEL TERRENO AFECTADO'); r++;
+
+      TXT(r, 'SEGÚN LO INDICADO EN EL PLANO DE AFECTACIÓN N° 02, LAS ÁREAS DE TERRENO SON LAS SIGUIENTES:'); r++;
+
+      SEP(r); r++;
+
+
+
+      BLANK(r, 1, 1, 1); r++;
+
+      H(r, 2, 'DESCRIPCIÓN', 1, 3, 'center');
+
+      H(r, 5, 'UND', 1, 2, 'center');
+
+      H(r, 7, 'ÁREA', 1, 4, 'center'); r++;
+
+
+
+      // Área total predio
+
+      BLANK(r, 1, 1, 1); RH(r, 18);
+
+      mrg(r, 2, 1, 3).setValue('ÁREA TOTAL DEL PREDIO (MATRIZ)')
+
+        .setFontWeight('bold').setBackground(BLANCO).setHorizontalAlignment('center');
+
+      brd(ws.getRange(r, 2, 1, 3));
+
+      V(r, 5, 'm²', 1, 2, 'center').setFontWeight('bold');
+
+      mrg(r, 7, 1, 4).setValue(num(d.areaTotalPredioM2 || d.areaMatrizM2))
+
+        .setFontWeight('bold').setBackground(BLANCO).setHorizontalAlignment('center');
+
+      brd(ws.getRange(r, 7, 1, 4)); r++;
+
+
+
+      // Filas de afectación
+
+      RH(r, 18); RH(r + 1, 18); RH(r + 2, 18);
+
+      BLANK(r, 1, 3, 1);
+
+      mrg(r, 2, 3, 1).setValue('Áreas afectadas').setFontWeight('normal')
+
+        .setBackground(BLANCO).setHorizontalAlignment('center').setVerticalAlignment('middle');
+
+      brd(ws.getRange(r, 2, 3, 1));
+
+
+
+      V(r, 3, 'Afectación Directa', 1, 2, 'left');
+
+      V(r, 5, 'm²', 1, 2, 'center');
+
+      V(r, 7, areaDirecta > 0 ? areaDirecta.toFixed(2) : '', 1, 4, 'center'); r++;
+
+
+
+      V(r, 3, 'Afectación Indirecta', 1, 2, 'left');
+
+      V(r, 5, 'm²', 1, 2, 'center');
+
+      V(r, 7, areaIndirecta > 0 ? areaIndirecta.toFixed(2) : '', 1, 4, 'center'); r++;
+
+
+
+      mrg(r, 3, 1, 2).setValue('AFECTADA TOTAL').setFontWeight('bold')
+
+        .setBackground(BLANCO).setHorizontalAlignment('left');
+
+      brd(ws.getRange(r, 3, 1, 2));
+
+      V(r, 5, 'm²', 1, 2, 'center').setFontWeight('bold');
+
+      mrg(r, 7, 1, 4).setValue(totalAfect > 0 ? totalAfect.toFixed(2) : '')
+
+        .setFontWeight('bold').setBackground(BLANCO).setHorizontalAlignment('center');
+
+      brd(ws.getRange(r, 7, 1, 4)); r++;
+
+
+
+      // Área remanente — solo si tiene valor real
+
+      BLANK(r, 1, 1, 1);
+
+      mrg(r, 2, 1, 3).setValue('ÁREA REMANENTE').setFontWeight('bold')
+
+        .setBackground(BLANCO).setHorizontalAlignment('center');
+
+      brd(ws.getRange(r, 2, 1, 3));
+
+      V(r, 5, 'm²', 1, 2, 'center').setFontWeight('bold');
+
+      mrg(r, 7, 1, 4).setValue(areaRemanente > 0 ? areaRemanente.toFixed(2) : '')
+
+        .setFontWeight('bold').setBackground(BLANCO).setHorizontalAlignment('center');
+
+      brd(ws.getRange(r, 7, 1, 4)); r++;
+
+      SEP(r); r++;
+
+    }
+
+
+
+    // Áreas afectadas — solo las que tienen colindancias o coordenadas reales
+
+    areas.forEach((area, aIdx) => {
+
+      const va = visAreas[aIdx];
+
+
+
+      if (va.vis62) {
+
+        SUB(r, '6.' + (aIdx + 2) + '. COLINDANCIAS Y LINDEROS DEL ÁREA AFECTADA'); r++;
+
+        TXT(r, 'SEGÚN LO INDICADO EN EL PLANO PERIMÉTRICO N° 03, LAS COLINDANCIAS DEL ÁREA AFECTADA SON:'); r++;
+
+        SEP(r); r++;
+
+        AZUL(r, 2, 'COLINDANCIAS Y LINDEROS DEL ÁREA AFECTADA', 1, 10, 'center'); r++;
+
+        BLANK(r, 1, 1, 1);
+
+        H(r, 2, 'LÍMITE', 1, 1, 'center');
+
+        H(r, 3, 'COLINDANCIA', 1, 5, 'center');
+
+        H(r, 8, 'LONGITUD (m)', 1, 4, 'center'); r++;
+
+        [
+
+          ['NORTE', area.colindanciaNorte, area.longitudNorte],
+
+          ['SUR', area.colindanciaSur, area.longitudSur],
+
+          ['ESTE', area.colindanciaEste, area.longitudEste],
+
+          ['OESTE', area.colindanciaOeste, area.longitudOeste],
+
+        ].forEach(([lim, col, lon]) => {
+
+          BLANK(r, 1, 1, 1);
+
+          H(r, 2, lim, 1, 1, 'center');
+
+          V(r, 3, safe(col) || '', 1, 5, 'left', true);
+
+          V(r, 8, tieneDatos(lon) ? num(lon) : '', 1, 4, 'center');
+
+          r++;
+
+        });
+
+        SEP(r); r++;
+
+      }
+
+
+
+      if (va.vis63) {
+
+        SUB(r, '6.' + (aIdx + 3) + '. CUADRO DE COORDENADAS UTM DEL ÁREA AFECTADA'); r++;
+
+        TXT(r, 'SEGÚN LO INDICADO EN EL PLANO PERIMÉTRICO N° 03, LAS COORDENADAS DEL ÁREA AFECTADA SON:'); r++;
+
+        SEP(r); r++;
+
+        AZUL(r, 2, 'CUADRO DE COORDENADAS UTM DEL ÁREA AFECTADA ' + (aIdx + 1), 1, 10, 'center'); r++;
+
+        tablaCoordenadasUTM(r); r += 2;
+
+        va.coordsArea.forEach(c => { filaCoord(r, c); r++; });
+
+        SEP(r); r++;
+
+      }
+
+    });
+
+  }
+
+
+
+  // ═══════════════════════════════════════════════════════════
+
+  //  SECCIÓN 7 — EDIFICACIONES
+
+  // ═══════════════════════════════════════════════════════════
+
+  const hasAT = modulos.length > 0;
+
+  const hasOC = obras.length > 0;
+
+  const hasInst = d.afectaInstalaciones === true
+
+    || String(d.afectaInstalaciones).toLowerCase() === 'true';
+
+
+
+  const vis71 = isVis('blk_7_1', hasAT);
+
+  const vis72 = isVis('blk_7_2', hasOC);
+
+  const vis73 = isVis('blk_7_3', hasInst);
+
+  const real7 = vis71 || vis72 || vis73;
+
+
+
+  if (real7) {
+
+    if (isVis('tit_sec7', true)) { RH(r, 20); SEC(r, '7. DESCRIPCIÓN DE EDIFICACIONES'); r++; SEP(r); r++; }
+
+
+
+    // ── 7.1 ÁREA TECHADA ────────────────────────────────────
+
+    if (vis71) {
+
+      SUB(r, '7.1. ÁREA TECHADA'); r++;
+
+      if (hasAT) {
+        if (tieneDatos(d.descripcionAreaTechada)) {
+          TXT(r, safe(d.descripcionAreaTechada), true); r++; SEP(r); r++;
+        }
+
+        // ── Título de la tabla ──────────────────────────────
+        RH(r, 18);
+        mrg(r, 1, 1, 11).setValue('DESCRIPCIÓN ÁREA TECHADA')
+          .setFontWeight('bold').setFontSize(SZ).setFontFamily(FONT)
+          .setBackground(BLANCO).setHorizontalAlignment('left');
+        ws.getRange(r, 1, 1, 11).setBorder(false, false, false, false, false, false);
+        r++;
+
+        // ── Fila de encabezados – nivel 1 ──────────────
+        RH(r, 30);
+        BLANK(r, 1, 2, 1);
+        H(r, 2, 'ÁREA TECHADA\n(AT)', 2, 1, 'center');
+        H(r, 3, 'NIVEL', 2, 1, 'center');
+        H(r, 4, 'ÁREA DE TECHADA AFECTADA (m²)', 1, 3, 'center');
+        BLANK(r, 7, 2, 1);   // ← columna separadora vacía entre TOTAL y ALEROS
+        H(r, 8, 'ALEROS (PROYECCIÓN DE TECHO) *\n(m²)', 2, 2, 'center');
+        BLANK(r, 10, 2, 2);
+        r++;
+
+        // ── Fila de encabezados – nivel 2 ──────────────
+        RH(r, 18);
+        H(r, 4, 'DIRECTA', 1, 1, 'center');
+        H(r, 5, 'INDIRECTA *', 1, 1, 'center');
+        H(r, 6, 'TOTAL', 1, 1, 'center');
+        r++;
+
+        // ── Filas de datos ──────────────────────────────────
+        let totD = 0, totI = 0, totA = 0;
+
+        modulos.forEach(mod => {
+          const pisos = mod.pisos || [];
+          const startRow = r;           // primera fila del módulo
+
+          pisos.forEach((piso, pIdx) => {
+            const dir = parseFloat(piso.areaDirectaM2) || 0;
+            const ind = parseFloat(piso.areaIndirectaM2) || 0;
+            const ale = parseFloat(piso.aleros) || 0;
+            totD += dir; totI += ind; totA += ale;
+
+            RH(r, 18);
+            BLANK(r, 1, 1, 1);
+
+            // La celda del módulo se escribe solo en la primera pasada;
+            // el merge vertical se hace UNA SOLA VEZ, después del forEach
+            if (pIdx === 0) {
+              // Escribe el valor en la primera celda del bloque;
+              // el merge lo haremos fuera del loop, cuando ya conocemos 'endRow'
+              ws.getRange(r, 2).setValue(mod.nombre || 'AT')
+                .setFontWeight('bold')
+                .setBackground(GRIS_CAB)
+                .setHorizontalAlignment('center')
+                .setVerticalAlignment('middle');
+              brd(ws.getRange(r, 2));
+            }
+
+            V(r, 3, piso.nivel || pIdx + 1, 1, 1, 'center');
+            V(r, 4, dir.toFixed(2), 1, 1, 'center');
+            V(r, 5, ind.toFixed(2), 1, 1, 'center');
+            V(r, 6, (dir + ind).toFixed(2), 1, 1, 'center');
+            V(r, 8, ale.toFixed(2), 1, 2, 'center');
+            BLANK(r, 11, 1, 3);
+            r++;
+          });
+
+          // ── Merge vertical de la columna del módulo ────────
+          // Se hace UNA VEZ por módulo, tras escribir todas sus filas
+          if (pisos.length > 1) {
+            const modRng = ws.getRange(startRow, 2, pisos.length, 1);
+            try {
+              modRng.breakApart();   // limpia merges previos en ese rango
+              modRng.merge();        // fusiona todas las filas del módulo
+            } catch (e) {
+              Logger.log('merge error (mod): ' + e);
+            }
+          }
+        });
+
+        // ── Fila de totales ─────────────────────────────────
+        RH(r, 18);
+        BLANK(r, 1, 1, 1);
+        H(r, 2, 'TOTAL', 1, 2, 'center');
+        V(r, 4, totD.toFixed(2), 1, 1, 'center').setFontWeight('bold');
+        V(r, 5, totI.toFixed(2), 1, 1, 'center').setFontWeight('bold');
+        V(r, 6, (totD + totI).toFixed(2), 1, 1, 'center').setFontWeight('bold');
+        BLANK(r, 7, 1, 1);
+        V(r, 8, totA.toFixed(2), 1, 2, 'center').setFontWeight('bold');
+        // Al final, redibujar el borde de col 6 para que no lo pise el BLANK
+        brd(ws.getRange(r, 6));
+        /*ws.getRange(r, 7).setBackground('#FFFFFF')
+          .setBorder(true, false, true, false, false, false, '#FFFFFF', SpreadsheetApp.BorderStyle.SOLID).setBorder(false, true, false, true, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID);*/
+        V(r, 8, totA.toFixed(2), 1, 2, 'center').setFontWeight('bold');
+        BLANK(r, 10, 1, 2);
+        r++; SEP(r); r++;
+
+        // ── Descripción por módulo/piso ─────────────────────
+        RH(r, 18);
+        try { ws.getRange(r, 1, 1, 11).breakApart(); } catch (_) { }
+        ws.getRange(r, 1, 1, 11).merge();
+        ws.getRange(r, 1).setValue('DESCRIPCIÓN ÁREA TECHADA')
+          .setFontWeight('bold').setFontSize(SZ).setFontFamily(FONT)
+          .setBackground(BLANCO).setHorizontalAlignment('left');
+        ws.getRange(r, 1, 1, 11).setBorder(true, true, true, true, true, true, '#FFFFFF', SpreadsheetApp.BorderStyle.SOLID);
+        r++;
+
+        modulos.forEach(mod => {
+          (mod.pisos || []).forEach((piso, pIdx) => {
+            const dir = parseFloat(piso.areaDirectaM2) || 0;
+            const ind = parseFloat(piso.areaIndirectaM2) || 0;
+            const etiq = piso.etiqueta || ('NIVEL ' + (piso.nivel || pIdx + 1));
+
+            RH(r, 18);
+            try { ws.getRange(r, 1, 1, 11).breakApart(); } catch (_) { }
+            ws.getRange(r, 1, 1, 11).merge();
+            ws.getRange(r, 1).setValue((mod.nombre || 'AT') + ' — ' + etiq)
+              .setFontWeight('bold').setFontSize(SZ).setFontFamily(FONT)
+              .setBackground(BLANCO).setHorizontalAlignment('left');
+            ws.getRange(r, 1, 1, 11).setBorder(true, true, true, true, true, true, '#FFFFFF', SpreadsheetApp.BorderStyle.SOLID);
+            r++; SEP(r); r++;
+
+            RH(r, 20);
+            H(r, 1, 'METRADO (m²)', 1, 1, 'center');
+            H(r, 2, 'USO', 1, 1, 'center');
+            H(r, 3, 'ANTIGÜEDAD', 1, 1, 'center');
+            H(r, 4, 'MATERIAL PREDOMINANTE', 1, 2, 'center');
+            H(r, 6, 'ESTADO DE CONSERVACIÓN', 1, 2, 'center');
+            H(r, 8, 'ESTADO DE CONSTRUCCIÓN', 1, 4, 'center');
+            r++;
+
+            RH(r, 18);
+            V(r, 1, (dir + ind).toFixed(2), 1, 1, 'center');
+            V(r, 2, safe(piso.uso) || '', 1, 1, 'center');
+            V(r, 3, safe(piso.antiguedad) || '', 1, 1, 'center');
+            V(r, 4, safe(piso.materialPredominante) || safe(piso.materialMuros) || '', 1, 2, 'center');
+            V(r, 6, safe(piso.estadoConservacion) || '', 1, 2, 'center');
+            V(r, 8, safe(piso.estadoConstruccion) || '', 1, 4, 'center');
+            r++; SEP(r); r++;
+
+            // Partidas con descripción
+            const partidasConDatos = (piso.partidas || []).filter(p => tieneDatos(p.descripcion));
+            if (partidasConDatos.length > 0) {
+              RH(r, 20);
+              BLANK(r, 1, 1, 1);
+              H(r, 2, 'PARTIDAS', 1, 2, 'center');
+              H(r, 4, 'CARACTERISTICAS CONSTRUCTIVAS', 1, 8, 'center');
+              r++;
+              RH(r, 10);
+              r++;
+
+              partidasConDatos.forEach(p => {
+                const largo = (p.descripcion || '').length;
+                RH(r, largo > 100 ? 50 : 35);
+                BLANK(r, 1, 1, 1);
+                H(r, 2, (p.nombre || '') + ' :', 1, 2, 'left');
+                V(r, 4, safe(p.descripcion) || '-', 1, 8, 'center', true);
+                r++;
+              });
+
+              SEP(r); r++;
+            }
+          });
+        });
+      }
+    }
+
+
+
+    // ── 7.2 OBRAS COMPLEMENTARIAS ────────────────────────────
+
+    if (vis72) {
+
+      SUB(r, '7.2. OBRAS COMPLEMENTARIAS'); r++;
+
+      if (hasOC) {
+
+        TXT(r, 'SE AFECTAN LAS SIGUIENTES OBRAS COMPLEMENTARIAS, CUYAS CARACTERISTICAS SON:'); r++;
+
+        obras.forEach(oc => {
+
+          RH(r, 20); SUB(r, 'DESCRIPCIÓN DE OBRAS COMPLEMENTARIAS'); r++;
+
+          RH(r, 18);
+
+          mrg(r, 1, 1, 11).setValue((oc.codigo || 'OC') + ': ' + (oc.descripcion || ''))
+
+            .setFontWeight('bold').setBackground(BLANCO).setHorizontalAlignment('left');
+
+          brd(ws.getRange(r, 1, 1, 11)); r++; SEP(r); r++;
+
+
+
+          RH(r, 20);
+
+          H(r, 1, 'METRADO', 1, 1, 'center');
+
+          H(r, 2, 'UNIDAD', 1, 1, 'center');
+
+          H(r, 3, 'ANTIGÜEDAD', 1, 1, 'center');
+
+          H(r, 4, 'MATERIAL PREDOMINANTE', 1, 2, 'center');
+
+          H(r, 6, 'ESTADO DE CONSERVACIÓN', 1, 2, 'center');
+
+          H(r, 8, 'ESTADO DE CONSTRUCCIÓN', 1, 4, 'center'); r++;
+
+          RH(r, 18);
+
+          V(r, 1, num(oc.metrado), 1, 1, 'center');
+
+          V(r, 2, safe(oc.unidad) || '', 1, 1, 'center');
+
+          V(r, 3, safe(oc.antiguedad) || '', 1, 1, 'center');
+
+          V(r, 4, safe(oc.materialPredominante) || '', 1, 2, 'center');
+
+          V(r, 6, safe(oc.estadoConservacion) || '', 1, 2, 'center');
+
+          V(r, 8, safe(oc.estadoConstruccion) || '', 1, 4, 'center');
+
+          r++; RH(r, 10); r++;
+
+          RH(r, 20); BLANK(r, 1, 4, 1);
+          H(r, 2, 'DIMENSIONES', 1, 2, 'center');
+          H(r, 4, 'CARACTERISTICAS', 1, 6, 'center'); r++;
+
+          // Fila LONGITUD — características aquí, borde completo
+          RH(r, 18);
+          H(r, 2, 'LONGITUD (m)', 1, 1, 'left');
+          V(r, 3, tieneDatos(oc.longitud) ? num(oc.longitud) : '', 1, 1, 'center');
+          mrg(r, 4, 2, 6).setValue(safe(oc.caracteristicas) || safe(oc.descripcion) || '')
+            .setFontWeight('normal').setBackground(BLANCO)
+            .setHorizontalAlignment('left').setVerticalAlignment('middle').setWrap(true);
+          const rngCar = ws.getRange(r, 4, 2, 6);
+          brd(rngCar); // bordes normales primero
+          ws.getRange(r + 1, 4, 2, 6).setBorder(null, null, false, null, null, null, '#FFFFFF', SpreadsheetApp.BorderStyle.SOLID); // borra borde inferior
+          r++;
+
+          // Fila ALTURA — D-K vacío con bordes completos
+          RH(r, 18);
+          H(r, 2, 'ALTURA (m)', 1, 1, 'left');
+          V(r, 3, tieneDatos(oc.altura) ? num(oc.altura) : '', 1, 1, 'center');
+          r++;
+
+          // Fila ANCHO/ESPESOR — UBICACIÓN va aquí en D-K
+          const lblAncho = (oc.anchoEspesor != null && oc.anchoEspesor !== '') ? 'ANCHO/ESPESOR (m)' : 'ÁREA (m²)';
+          const valAncho = (oc.anchoEspesor != null && oc.anchoEspesor !== '') ? oc.anchoEspesor : oc.area;
+          RH(r, 18);
+          H(r, 2, lblAncho, 1, 1, 'left');
+          V(r, 3, tieneDatos(valAncho) ? num(valAncho) : '', 1, 1, 'center');
+
+          mrg(r, 4, 1, 6).setValue('UBICACIÓN: ' + (oc.ubicacion || 'SE ENCUENTRA DENTRO DEL PREDIO AFECTADO'))
+            .setFontWeight('normal').setBackground(BLANCO)
+            .setHorizontalAlignment('left').setVerticalAlignment('middle').setWrap(true);
+
+          const rngUbi = ws.getRange(r, 4, 1, 6);
+          brd(rngUbi); // bordes normales
+          ws.getRange(r, 4, 1, 6).setBorder(false, null, null, null, null, null, '#FFFFFF', SpreadsheetApp.BorderStyle.SOLID); // borra borde superior
+          r++; SEP(r); r++;
+
+        });
+
+      }
+
+    }
+
+
+
+    // ── 7.3 INSTALACIONES ────────────────────────────────────
+
+    if (vis73) {
+
+      SUB(r, '7.3. INSTALACIONES FIJAS Y PERMANENTES'); r++;
+
+      TXT(r, 'SE AFECTAN INSTALACIONES FIJAS Y PERMANENTES'); r++;
+
+      SEP(r); r++;
+
+    }
+
+  }
+
+
+
+  // ═══════════════════════════════════════════════════════════
+
+  //  SECCIÓN 8 — PLANTACIONES
+
+  // ═══════════════════════════════════════════════════════════
+
+  const mFrutales = frutales.length > 0;
+
+  const mForestales = forestales.length > 0;
+
+  const mCerco = cerco.length > 0;
+
+  const mTransit = transit.length > 0;
+
+
+
+  const vis81 = isVis('blk_8_1', mFrutales);
+
+  const vis812 = isVis('blk_8_1_2', mForestales);
+
+  const vis813 = isVis('blk_8_1_3', mCerco);
+
+  const vis82 = isVis('blk_8_2', mTransit);
+
+
+
+  const tienePermanentes = vis81 || vis812 || vis813;
+
+  const real8 = tienePermanentes || vis82;
+
+
+
+  if (real8) {
+
+    if (isVis('tit_sec8', true)) { RH(r, 20); SEC(r, '8. DESCRIPCIÓN DE PLANTACIONES'); r++; SEP(r); r++; }
+
+
+
+    if (tienePermanentes) {
+
+      SECVERDE(r, '8.1 PLANTACIONES PERMANENTES'); r++; SEP(r); r++;
+
+    }
+
+
+
+    if (vis81) {
+
+      SECVERDE(r, '8.1.1 FRUTALES, PASTOS (FORRAJE), AROMÁTICAS, MEDICINALES, AGROINDUSTRIALES Y ORNAMENTALES'); r++; SEP(r); r++;
+
+      if (mFrutales) { tablaPlantasHeader(r); r++; frutales.forEach(p => { tablaPlantasFila(r, p); r++; }); }
+
+      SEP(r); r++;
+
+    }
+
+
+
+    if (vis812) {
+
+      SECVERDE(r, '8.1.2 PLANTACIONES PERMANENTES: FORESTALES'); r++; SEP(r); r++;
+
+      if (mForestales) { tablaPlantasHeader(r); r++; forestales.forEach(p => { tablaPlantasFila(r, p); r++; }); }
+
+      SEP(r); r++;
+
+    }
+
+
+
+    if (vis813) {
+
+      SECVERDE(r, '8.1.3 CERCO VIVO'); r++; SEP(r); r++;
+
+      if (mCerco) {
+
+        RH(r, 20);
+
+        H(r, 1, 'Nombre científico', 1, 1, 'center').setBackground('#E2EFD9');
+
+        H(r, 2, 'Nombre común', 1, 1, 'center').setBackground('#E2EFD9');
+
+        H(r, 3, 'Edad', 1, 1, 'center').setBackground('#E2EFD9');
+
+        H(r, 4, 'Distanciamiento (m)', 1, 1, 'center').setBackground('#E2EFD9');
+
+        H(r, 5, 'Longitud cerco (m)', 1, 1, 'center').setBackground('#E2EFD9');
+
+        H(r, 6, 'Observaciones', 1, 6, 'center').setBackground('#E2EFD9'); r++;
+
+        cerco.forEach(p => {
+
+          RH(r, 18);
+
+          V(r, 1, safe(p.nombreCientifico) || '', 1, 1, 'left');
+
+          V(r, 2, safe(p.nombreComun) || '', 1, 1, 'left');
+
+          V(r, 3, safe(p.edad) || '', 1, 1, 'center');
+
+          V(r, 4, tieneDatos(p.distanciamiento) ? num(p.distanciamiento) : '', 1, 1, 'center');
+
+          V(r, 5, tieneDatos(p.longitudCerco) ? num(p.longitudCerco) : '', 1, 1, 'center');
+
+          V(r, 6, safe(p.observaciones) || '-', 1, 6, 'left', true); r++;
+
+        });
+
+      }
+
+      SEP(r); r++;
+
+    }
+
+
+
+    if (vis82) {
+
+      SECVERDE(r, '8.2 PLANTACIONES TRANSITORIAS'); r++; SEP(r); r++;
+
+      if (mTransit) { tablaPlantasHeader(r); r++; transit.forEach(p => { tablaPlantasFila(r, p); r++; }); }
+
+      SEP(r); r++;
+
+    }
+
+  }
+
+
+
+  // ═══════════════════════════════════════════════════════════
+
+  //  SECCIÓN 9 — PERJUICIO ECONÓMICO
+
+  // ═══════════════════════════════════════════════════════════
+
+  const danioEmergente = d.danioEmergente === true || String(d.danioEmergente).toLowerCase() === 'true';
+
+  const lucroCesante = d.lucroCesante === true || String(d.lucroCesante).toLowerCase() === 'true';
+
+  const has9 = danioEmergente || lucroCesante;
+
+
+
+  const vis9 = isVis('tit_sec9', has9);
+
+  if (isVis('tab_sec_9', vis9)) {
+
+    if (vis9) {
+
+      RH(r, 20); SEC(r, '9. PERJUICIO ECONÓMICO'); r++; SEP(r); r++;
+
+      RH(r, 20);
+
+      H(r, 1, 'IDENTIFICACIÓN', 1, 1, 'center');
+
+      H(r, 2, 'CORRESPONDE', 1, 2, 'center'); r++;
+
+      [
+
+        ['DAÑO EMERGENTE', danioEmergente ? 'SI' : 'NO'],
+
+        ['LUCRO CESANTE', lucroCesante ? 'SI' : 'NO'],
+
+      ].forEach(([lbl, val]) => {
+
+        RH(r, 18); V(r, 1, lbl, 1, 1, 'left'); V(r, 2, val, 1, 2, 'center'); r++;
+
+      });
+
+      SEP(r); r++;
+
+    }
+
+  }
+
+
+
+  // ═══════════════════════════════════════════════════════════
+  //  SECCIÓN 10 — ELEMENTOS A TASAR
+  // ═══════════════════════════════════════════════════════════
+  const elementosFiltrados = elementos.filter(el => {
+    if (el.esEncabezado) return true;
+    return tieneDatos(el.cantidad) || tieneDatos(el.unidad);
+  });
+  const has10 = elementosFiltrados.some(el => !el.esEncabezado);
+
+  const vis10 = isVis('tit_sec10', has10);
+  if (isVis('tab_sec_10', vis10)) {
+    if (vis10) {
+      RH(r, 20); SEC(r, '10. ELEMENTOS A TASAR'); r++; SEP(r); r++;
+
+      RH(r, 20);
+      const headerRow = r; // guardar fila del header
+
+      // Dibujar headers con borde grueso
+      HW(r, 1, 'DESCRIPCIÓN', 1, 4, 'left');
+      HW(r, 5, 'UNIDAD', 1, 1, 'center');
+      HW(r, 6, 'CANTIDAD', 1, 1, 'center');
+      r++;
+
+      elementosFiltrados.forEach(el => {
+        RH(r, 18);
+
+        const dc = mrg(r, 1, 1, 4);
+        dc.setValue(el.descripcion || '')
+          .setFontWeight(el.esEncabezado ? 'bold' : 'normal')
+          .setBackground(BLANCO)
+          .setHorizontalAlignment('left')
+          .setVerticalAlignment('middle');
+        // Borde normal negro (no grueso)
+        dc.setBorder(true, true, true, true, true, true, NEGRO, BS);
+
+        const cu = mrg(r, 5, 1, 1);
+        cu.setValue(el.unidad || '-')
+          .setFontWeight('normal').setBackground(BLANCO)
+          .setHorizontalAlignment('center').setVerticalAlignment('middle');
+        cu.setBorder(true, true, true, true, true, true, NEGRO, BS);
+
+        const cc = mrg(r, 6, 1, 1);
+        cc.setValue(el.cantidad != null ? el.cantidad : '')
+          .setFontWeight('normal').setBackground(BLANCO)
+          .setHorizontalAlignment('center').setVerticalAlignment('middle');
+        cc.setBorder(true, true, true, true, true, true, NEGRO, BS);
+
+        r++;
+      });
+
+      // ── Redibujar bordes gruesos del header DESPUÉS de las filas de datos ──
+      // Así el borde inferior grueso del header nunca queda pisado
+      const BS_M = SpreadsheetApp.BorderStyle.SOLID_MEDIUM;
+      ws.getRange(headerRow, 1, 1, 4)
+        .setBorder(true, true, true, true, false, false, NEGRO, BS_M);
+      ws.getRange(headerRow, 5, 1, 1)
+        .setBorder(true, true, true, true, false, false, NEGRO, BS_M);
+      ws.getRange(headerRow, 6, 1, 1)
+        .setBorder(true, true, true, true, false, false, NEGRO, BS_M);
+
+      SEP(r); r++;
+    }
+  }
+
+
+
+  // ═══════════════════════════════════════════════════════════
+
+  //  SECCIÓN 11 — DOCUMENTOS ADJUNTOS
+
+  // ═══════════════════════════════════════════════════════════
+
+  const vis11 = isVis('tit_sec11', true);
+
+  if (isVis('tab_sec_11', vis11)) {
+
+    if (vis11) {
+
+      RH(r, 20); SEC(r, '11. DOCUMENTOS ADJUNTOS'); r++; SEP(r); r++;
+
+      const docsList = ['FICHA RENIEC Y/O COPIA DNI'];
+
+      if (tieneDatos(d.partidaRegistral)) docsList.push('PARTIDA REGISTRAL N° ' + d.partidaRegistral + ', DEL REGISTRO DE PROPIEDAD INMUEBLE.');
+
+      docsList.push('DECLARACIÓN JURADA DE COLINDANTES MAYOR A 10 AÑOS');
+
+      docsList.push('CONSTANCIA DE POSESIÓN');
+
+      docsList.forEach((doc, i) => {
+
+        RH(r, 18); V2(r, 1, (i + 1) + '.', 1, 1, 'right'); V2(r, 2, doc, 1, 10, 'left', true); r++;
+
+      });
+
+      SEP(r); r++;
+
+    }
+
+  }
+
+
+
+  // ═══════════════════════════════════════════════════════════
+
+  //  SECCIÓN 12 — OBSERVACIONES
+
+  // ═══════════════════════════════════════════════════════════
+
+  const obsRaw = d.observaciones ? String(d.observaciones).split('\n\n').filter(o => o.trim()) : [];
+
+  const has12 = obsRaw.length > 0;
+
+
+
+  const vis12 = isVis('tit_sec12', has12);
+
+  if (isVis('tab_sec_12', vis12)) {
+
+    if (vis12) {
+
+      RH(r, 20); SEC(r, '12. OBSERVACIONES'); r++; SEP(r); r++;
+
+      obsRaw.forEach((o, i) => {
+
+        const txt = (i + 1) + '. ' + o.trim();
+
+        const lineas = Math.ceil(txt.length / 110);
+
+        RH(r, Math.max(30, lineas * 15));
+
+        TXTNB(r, txt, true); r++;
+
+      });
+
+      SEP(r); r++;
+
+    }
+
+  }
+
+
+
+  // ═══════════════════════════════════════════════════════════
+
+  //  SECCIÓN 13 — PANEL FOTOGRÁFICO
+
+  // ═══════════════════════════════════════════════════════════
+
+  SEP(r); r++;
+
+  RH(r, 20); SEC(r, '13. PANEL FOTOGRÁFICO (de los elementos a valorizar)'); r++;
+
+
+
+  // ── Limpieza final ────────────────────────────────────────
+
+  try { const maxR = ws.getMaxRows(); if (maxR > r + 5) ws.deleteRows(r + 1, maxR - (r + 5)); } catch (_) { }
+
+  try { ws.getRange(1, 1, r, 11).setFontFamily(FONT).setFontSize(SZ); } catch (_) { }
+
+}
+
+// ── Helpers anidados de tablas ──
+
+function tablaCoordenadasUTM(startRow) {
+
+  RH(startRow, 20);
+  RH(startRow + 1, 18);
+  BLANK(startRow, 1, 2, 1);
+  H(startRow, 2, 'VÉRTICE', 2, 1, 'center');
+  H(startRow, 3, 'LADO', 2, 1, 'center');
+  H(startRow, 4, 'DISTANCIA', 2, 1, 'center');
+  H(startRow, 5, 'ÁNG. INTERNO', 2, 1, 'center');
+  AZUL(startRow, 6, 'COORDENADAS UTM WGS 84', 1, 2, 'center');
+  BLANK(startRow, 8, 2, 4);
+  H(startRow + 1, 6, 'ESTE (X)', 1, 1, 'center');
+  H(startRow + 1, 7, 'NORTE (Y)', 1, 1, 'center');
+
+}
+
+function filaCoord(row, c) {
+
+  RH(row, 16);
+  BLANK(row, 1, 1, 1);
+  V(row, 2, c.vertice, 1, 1, 'center');
+  V(row, 3, c.lado, 1, 1, 'center');
+  V(row, 4, num(c.distancia), 1, 1, 'center');
+  V(row, 5, c.angulo || '', 1, 1, 'center');
+  V(row, 6, num(c.esteX), 1, 1, 'center');
+  V(row, 7, num(c.norteY), 1, 1, 'center');
+  BLANK(row, 8, 1, 4);
+
+}
+
+function tablaPlantasHeader(row) {
+
+  RH(row, 25);
+  H(row, 1, 'Nombre científico', 1, 1, 'center').setBackground('#E2EFD9');
+  H(row, 2, 'Nombre común', 1, 2, 'center').setBackground('#E2EFD9');
+  H(row, 4, 'Variedad', 1, 1, 'center').setBackground('#E2EFD9');
+  H(row, 5, 'Edad', 1, 1, 'center').setBackground('#E2EFD9');
+  H(row, 6, 'unidad de medida', 1, 1, 'center').setBackground('#E2EFD9');
+  H(row, 7, 'Cantidad', 1, 1, 'center').setBackground('#E2EFD9');
+  H(row, 8, 'Utilidad', 1, 1, 'center').setBackground('#E2EFD9');
+  H(row, 9, 'Observaciones', 1, 3, 'center').setBackground('#E2EFD9');
+
+}
+
+
+
+function tablaPlantasFila(row, p) {
+
+  RH(row, 25);
+  V(row, 1, p.nombreCientifico || '', 1, 1, 'center');
+  V(row, 2, p.nombreComun || '', 1, 2, 'center');
+  V(row, 4, p.variedad || '', 1, 1, 'center');
+  V(row, 5, p.edad || '', 1, 1, 'center'); V(row, 6, p.unidadMedida || '', 1, 1, 'center');
+  V(row, 7, num(p.cantidad), 1, 1, 'center'); V(row, 8, p.utilidad || '', 1, 1, 'center');
+  V(row, 9, p.observaciones || '-', 1, 3, 'center', true);
+
+}
+
+// ============================================================
+//  GENERAR TXT DE DIAGNÓSTICO EN CASO DE ERROR
+// ============================================================
+function generarTxtError(carpetaDestino, codigo, logs, datos, err) {
+  try {
+    const fecha = Utilities.formatDate(new Date(), 'America/Lima', 'yyyy-MM-dd_HH-mm-ss');
+    const nombreTxt = 'ERROR_' + limpiar(codigo) + '_' + fecha + '.txt';
+
+    const lineas = [];
+    lineas.push('══════════════════════════════════════════════════');
+    lineas.push('  DIAGNÓSTICO DE ERROR — Apps Script');
+    lineas.push('══════════════════════════════════════════════════');
+    lineas.push('Fecha/hora : ' + fecha);
+    lineas.push('Código     : ' + (codigo || 'N/A'));
+    lineas.push('');
+
+    // ── Error principal ──────────────────────────────────────
+    lineas.push('── ERROR ──────────────────────────────────────────');
+    lineas.push('Mensaje : ' + (err ? String(err.message || err) : 'Sin mensaje'));
+    if (err && err.stack) {
+      lineas.push('Stack   :');
+      String(err.stack).split('\n').forEach(function (l) { lineas.push('  ' + l); });
+    }
+    lineas.push('');
+
+    // ── Logs de ejecución ────────────────────────────────────
+    lineas.push('── LOGS DE EJECUCIÓN ──────────────────────────────');
+    if (logs && logs.length > 0) {
+      logs.forEach(function (l, i) { lineas.push('[' + (i + 1) + '] ' + l); });
+    } else {
+      lineas.push('(sin logs registrados)');
+    }
+    lineas.push('');
+
+    // ── Datos recibidos (resumen) ────────────────────────────
+    lineas.push('── DATOS RECIBIDOS ────────────────────────────────');
+    var camposSimples = [
+      'codigo', 'codigoNuevo', 'proyecto', 'nombreTitular1',
+      'distrito', 'provincia', 'departamento',
+      'areaTotalPredioM2', 'areaAfectadaDirectaM2', 'areaAfectadaIndirectaM2'
+    ];
+    camposSimples.forEach(function (k) {
+      var v = datos[k];
+      if (v !== null && v !== undefined && v !== '') {
+        lineas.push(k + ' : ' + String(v).substring(0, 120));
+      }
+    });
+    lineas.push('');
+
+    // Campos array (solo longitud, no volcar todo)
+    var camposArray = [
+      'coordenadas', 'areasAfectadas', 'modulosAreaTechada',
+      'obrasComplementarias', 'plantacionesFrutales',
+      'plantacionesForestales', 'plantacionesCercoVivo',
+      'plantacionesTransitorias', 'elementosATasar', 'anexos'
+    ];
+    lineas.push('── ARRAYS (longitud) ──────────────────────────────');
+    camposArray.forEach(function (k) {
+      var v = tryParse(datos[k], []);
+      lineas.push(k + '.length : ' + (Array.isArray(v) ? v.length : 'no-array'));
+    });
+    lineas.push('');
+
+    // ── Payload completo (truncado a 8 000 chars) ────────────
+    lineas.push('── PAYLOAD COMPLETO (truncado) ─────────────────────');
+    try {
+      var payloadStr = JSON.stringify(datos, null, 2);
+      if (payloadStr.length > 8000) {
+        payloadStr = payloadStr.substring(0, 8000) + '\n... [TRUNCADO]';
+      }
+      payloadStr.split('\n').forEach(function (l) { lineas.push(l); });
+    } catch (eJson) {
+      lineas.push('(no se pudo serializar el payload: ' + eJson + ')');
+    }
+    lineas.push('');
+    lineas.push('══════════════════════════════════════════════════');
+    lineas.push('  FIN DEL DIAGNÓSTICO');
+    lineas.push('══════════════════════════════════════════════════');
+
+    var contenido = lineas.join('\n');
+    var blob = Utilities.newBlob(contenido, 'text/plain', nombreTxt);
+    var archivo = carpetaDestino.createFile(blob);
+
+    return {
+      ok: false,
+      error: err ? String(err.message || err) : 'Error desconocido',
+      diagnosticoUrl: archivo.getUrl(),
+      diagnosticoNombre: nombreTxt,
+      msg: 'Se generó archivo de diagnóstico en Drive: ' + nombreTxt
+    };
+
+  } catch (errTxt) {
+    // Si ni siquiera el TXT se puede guardar, devolver solo el error original
+    return {
+      ok: false,
+      error: err ? String(err.message || err) : 'Error desconocido',
+      errorDiagnostico: String(errTxt),
+      msg: 'No se pudo guardar el archivo de diagnóstico'
+    };
+  }
+}
+
+// ============================================================
+
+//  RESOLVER CARPETA
+
+// ============================================================
+
+function resolverCarpeta(raizId, estructura, datos) {
+
+  let carpeta;
+
+  try { carpeta = DriveApp.getFolderById(raizId); } catch (_) { carpeta = DriveApp.getRootFolder(); }
+
+
+
+  if (!estructura || !Array.isArray(estructura) || estructura.length === 0) return carpeta;
+
+
+
+  for (let i = 0; i < estructura.length; i++) {
+
+    let nivel = String(estructura[i] || '').trim();
+
+    if (!nivel) continue;
+
+    nivel = nivel.replace(/\{codigo\}/gi, limpiar(datos.codigo || datos.codigoNuevo || ''))
+
+      .replace(/\{proyecto\}/gi, limpiar(datos.proyecto || ''))
+
+      .replace(/\{fecha\}/gi, Utilities.formatDate(new Date(), 'America/Lima', 'yyyy-MM-dd'))
+
+      .replace(/\{año\}/gi, Utilities.formatDate(new Date(), 'America/Lima', 'yyyy'))
+
+      .replace(/\{anio\}/gi, Utilities.formatDate(new Date(), 'America/Lima', 'yyyy'))
+
+      .trim();
+
+    if (!nivel) continue;
+
+    try {
+
+      const existentes = carpeta.getFoldersByName(nivel);
+
+      carpeta = existentes.hasNext() ? existentes.next() : carpeta.createFolder(nivel);
+
+    } catch (errC) { throw new Error('No se pudo crear la carpeta "' + nivel + '": ' + errC.message); }
+
+  }
+
+  return carpeta;
+
+}
+
+
+
+// ============================================================
+
+//  HISTORIAL Y HELPERS
+
+// ============================================================
+
+function registrarEnHistorial(payload, url) {
+
+  const sheetId = payload.sheetHistorialId;
+
+  const sheetName = payload.sheetHistorialName || 'Historial';
+
+  const datos = payload.memoriaCompleta || {};
+
+  const ss = SpreadsheetApp.openById(sheetId);
+
+  let sheet = ss.getSheetByName(sheetName);
+
+  if (!sheet) sheet = ss.insertSheet(sheetName);
+
+  if (sheet.getLastRow() === 0) sheet.appendRow(['Fecha', 'Código', 'Titular', 'URL Archivo']);
+
+  sheet.appendRow([Utilities.formatDate(new Date(), 'America/Lima', 'dd/MM/yyyy HH:mm'), datos.codigo || '', datos.nombreTitular1 || '', url]);
+
+}
+
+
+
+function tryParse(valor, fallback) {
+
+  if (valor === null || valor === undefined || valor === '') return fallback;
+
+  if (Array.isArray(valor)) return valor;
+
+  if (typeof valor === 'object') return valor;
+
+  if (typeof valor === 'string') {
+
+    const limpio = valor.trim().replace(/\n/g, '').replace(/\r/g, '');
+
+    try { return JSON.parse(limpio); } catch (err) { return fallback; }
+
+  }
+
+  return fallback;
+
+}
+
+
+
+function num(v) {
+
+  if (v === null || v === undefined || v === '') return '';
+
+  const n = parseFloat(String(v).replace(',', '.'));
+
+  return isNaN(n) ? '' : n;
+
+}
+
+
+
+function limpiar(s) { return String(s || '').replace(/[/\\:*?"<>|]/g, '_').trim(); }
+
+function toRomano(n) {
+
+  const vals = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+
+  const syms = ['M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I'];
+
+  let result = '';
+
+  for (let i = 0; i < vals.length; i++) { while (n >= vals[i]) { result += syms[i]; n -= vals[i]; } }
+
+  return result;
+
+}
+
+function fromRomano(s) {
+
+  const map = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 }; let result = 0; s = s.toUpperCase();
+
+  for (let i = 0; i < s.length; i++) { const cur = map[s[i]] || 0; const nxt = map[s[i + 1]] || 0; result += (cur < nxt) ? -cur : cur; }
+
+  return result;
+
+}
+
+function obtenerCarpetaHistorial(carpetaDestino) {
+
+  const existing = carpetaDestino.getFoldersByName('Historial');
+
+  if (existing.hasNext()) return existing.next(); return carpetaDestino.createFolder('Historial');
+
+}
+
+function siguienteNumeroHistorial(carpetaHistorial, nombreBase) {
+
+  const archivos = carpetaHistorial.getFiles(); const regex = new RegExp('^([IVXLCDM]+) ' + nombreBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$');
+
+  let maxNum = 0;
+
+  while (archivos.hasNext()) { const m = archivos.next().getName().match(regex); if (m) { const n = fromRomano(m[1]); if (n > maxNum) maxNum = n; } }
+
+  return maxNum + 1;
+
+}
+
+
+
+

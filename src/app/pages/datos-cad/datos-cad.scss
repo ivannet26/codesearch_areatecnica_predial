@@ -1,0 +1,731 @@
+.config-wrapper {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem;
+  margin: 2rem auto;
+  max-width: 950px;
+  width: 95%;
+  box-sizing: border-box;
+
+  /* ─── ENCABEZADO ─── */
+  .config-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+
+    .config-title {
+      h2 {
+        margin: 0 0 0.5rem 0;
+        color: #0f172a;
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+      }
+
+      p {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.95rem;
+      }
+    }
+
+    /* Badges de estado */
+    .badge {
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+
+      &.badge-custom {
+        background: #eff6ff;
+        color: #2563eb;
+        border: 1px solid #bfdbfe;
+      }
+
+      &.badge-default {
+        background: #f8fafc;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+      }
+    }
+  }
+
+
+  /* ─── CUERPO Y TARJETAS ─── */
+  .config-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .config-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background-color: #f8fafc;
+    transition: all 0.3s ease;
+
+    /* Tarjeta destacada (Memoria) */
+    &.config-card--highlight-red {
+      background-color: #ffefeb;
+      border-color: #fd9b8a;
+    }
+
+    &.config-card--highlight-green {
+      background-color: #edffeb;
+      border-color: #acfd8a;
+    }
+    &.config-card--highlight-yellow {
+      background-color: #fffbeb;
+      border-color: #fde68a;
+    }
+
+    &.config-card--highlight-blue {
+      background-color: #ebf3ff;
+      border-color: #8abefd;
+    }
+
+    &.config-card--highlight-purple {
+      background-color: #f9ebff;
+      border-color: #d98afd;
+    }
+
+    &.config-card--highlight-cyan {
+      background-color: #ebfffe;
+      border-color: #8afde0;
+    }
+
+    &:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+      transform: translateY(-2px);
+    }
+
+    .card-icon {
+      font-size: 1.8rem;
+      width: 55px;
+      height: 55px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      color: white;
+      flex-shrink: 0;
+      /* Evita que el ícono se aplaste */
+
+      &.padron-icon {
+        background-color: #3b82f6;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+      }
+
+      &.cad-icon {
+        background-color: #10b981;
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+      }
+
+      &.memoria-icon {
+        background-color: #f59e0b;
+        box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+      }
+    }
+
+    .card-content {
+      flex: 1;
+      min-width: 0;
+      /* TRUCO MAGICO: Evita que el flexbox se rompa por textos largos */
+
+      h3 {
+        margin: 0 0 0.4rem 0;
+        color: #1e293b;
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+
+      p {
+        margin: 0 0 1rem 0;
+        color: #64748b;
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+
+      /* Muestra de la URL en modo lectura */
+      .url-display {
+        background: #f1f5f9;
+        padding: 0.8rem 1rem;
+        border-radius: 6px;
+        color: #334155;
+        font-family: monospace;
+        font-size: 0.85rem;
+        word-break: break-all;
+        /* Rompe el enlace si es muy largo */
+        border: 1px dashed #cbd5e1;
+      }
+
+      /* Modo Edición */
+      .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+
+        input {
+          width: 100%;
+          padding: 0.8rem 1rem;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          color: #0f172a;
+          font-family: monospace;
+          box-sizing: border-box;
+          outline: none;
+          transition: all 0.2s;
+
+          &:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+          }
+        }
+
+        .hint {
+          font-size: 0.8rem;
+          color: #94a3b8;
+
+          &--info {
+            color: #0369a1;
+            background: #e0f2fe;
+            padding: 0.5rem 0.8rem;
+            border-radius: 6px;
+            display: inline-block;
+            margin-top: 0.4rem;
+            line-height: 1.4;
+          }
+        }
+      }
+    }
+  }
+
+  /* ─── FOOTER Y BOTONES ─── */
+  .config-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #f1f5f9;
+    flex-wrap: wrap;
+    /* Para pantallas pequeñas */
+
+    .mensaje-exito {
+      color: #10b981;
+      font-weight: 600;
+      font-size: 0.95rem;
+      background: #ecfdf5;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-left: auto;
+
+      button {
+        padding: 0.8rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        &:active:not(:disabled) {
+          transform: scale(0.97);
+        }
+      }
+
+      .btn-edit {
+        background-color: #3b82f6;
+        color: white;
+
+        &:hover {
+          background-color: #2563eb;
+        }
+      }
+
+      .btn-cancel {
+        background-color: #f1f5f9;
+        color: #475569;
+
+        &:hover {
+          background-color: #e2e8f0;
+        }
+      }
+
+      .btn-default {
+        background-color: white;
+        border: 1px solid #cbd5e1;
+        color: #64748b;
+
+        &:hover {
+          background-color: #f8fafc;
+          color: #0f172a;
+        }
+      }
+
+      .btn-save {
+        background-color: #f59e0b;
+        color: #fff;
+
+        &:hover {
+          background-color: #d97706;
+        }
+      }
+    }
+  }
+}
+
+/* Contenedor principal del constructor de árbol */
+.folder-builder {
+  background: #f8f9fa;
+  border: 1px solid #e3e6f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+  font-family: 'Courier New', Courier, monospace;
+  /* Le da un toque técnico muy limpio */
+}
+
+/* Líneas y jerarquía de niveles */
+.folder-level {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  height: 36px;
+}
+
+.root-level {
+  font-weight: bold;
+  color: #4e73df;
+}
+
+.folder-branch {
+  color: #858796;
+  margin-right: 0.5rem;
+  white-space: pre;
+}
+
+/* Textos de las carpetas */
+.folder-name {
+  background: #eaecf4;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  color: #2e59d9;
+}
+
+/* Estilo especial para cuando es una variable dinámica como {codigo} */
+.folder-name--variable {
+  background: #e7f1ff;
+  border: 1px dashed #0d6efd;
+  color: #0d6efd;
+  font-weight: bold;
+}
+
+/* Inputs durante la edición */
+.folder-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.folder-input-wrapper input {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #d1d3e2;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  width: 250px;
+}
+
+.btn-remove-level {
+  background: #e74a3b;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+}
+
+/* Botones de acción del árbol */
+.folder-builder-actions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #e3e6f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.btn-add-level {
+  background: #1cc88a;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  width: fit-content;
+  font-size: 0.85rem;
+}
+
+/* Badges para insertar variables rápido */
+.variable-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-family: sans-serif;
+}
+
+.variable-badges .badge {
+  background: #f1f3f5;
+  border: 1px solid #ced4da;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: monospace;
+}
+
+.variable-badges .badge:hover {
+  background: #e2e6ea;
+}
+
+/* Indicador final del archivo */
+.file-indicator {
+  color: #155724;
+  font-style: italic;
+  margin-left: 0.5rem;
+}
+
+/* Preview inferior */
+.structure-preview {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  background: #fff3cd;
+  color: #856404;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+}
+
+.preview-path {
+  font-family: monospace;
+}
+
+/* ─── ESTRUCTURA DINÁMICA DE CARPETAS (ÁRBOL) ─── */
+  .folder-tree {
+    background: #0f172a; // Un fondo oscuro tipo terminal/código resalta genial este árbol
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin: 1rem 0;
+    font-family: 'Fira Code', 'Courier New', Courier, monospace;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
+
+    .tree-row {
+      display: flex;
+      align-items: center;
+      min-height: 32px;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+
+      &--root {
+        border-bottom: 1px dashed #334155;
+        padding-bottom: 0.4rem;
+        margin-bottom: 0.4rem;
+      }
+    }
+
+    .tree-connector {
+      color: #475569;
+      font-weight: bold;
+      letter-spacing: 1px;
+      user-select: none;
+
+      &--file {
+        margin-left: 1.5rem; // Sangría extra para el archivo final
+      }
+    }
+
+    .tree-icon {
+      font-size: 1.1rem;
+      user-select: none;
+    }
+
+    .tree-label {
+      color: #94a3b8;
+      font-size: 0.9rem;
+
+      &--root {
+        color: #38bdf8;
+        font-weight: 600;
+      }
+
+      &--variable {
+        color: #34d399; // Verde brillante para identificar variables de un vistazo
+        background: rgba(52, 211, 153, 0.1);
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        border: 1px dashed rgba(52, 211, 153, 0.3);
+        font-weight: 600;
+      }
+
+      &--file {
+        color: #fca5a5;
+        font-style: italic;
+      }
+    }
+
+    .tree-input-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .tree-input {
+        background: #1e293b;
+        border: 1px solid #475569;
+        color: #f8fafc;
+        padding: 0.3rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-family: monospace;
+        width: 220px;
+        transition: all 0.2s;
+
+        &:focus {
+          border-color: #3b82f6;
+          background: #0f172a;
+          outline: none;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+      }
+
+      .btn-remove-level {
+        background: rgba(239, 68, 68, 0.2);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        border-radius: 4px;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        transition: all 0.2s;
+
+        &:hover {
+          background: #ef4444;
+          color: white;
+        }
+      }
+    }
+
+    .tree-file-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      margin-top: 0.25rem;
+    }
+
+    .tree-empty {
+      color: #64748b;
+      font-size: 0.85rem;
+      font-style: italic;
+      padding: 0.5rem 0;
+    }
+  }
+
+  /* Controles del Constructor (Botón + Badges) */
+  .tree-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+
+    .btn-add-level {
+      background-color: #10b981;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: background 0.2s;
+
+      &:hover {
+        background-color: #059669;
+      }
+    }
+
+    .variable-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+
+      &__hint {
+        font-size: 0.8rem;
+        color: #64748b;
+        font-weight: 500;
+      }
+
+      .badge {
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+        padding: 0.25rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-family: monospace;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+          background: #e2e8f0;
+          color: #0f172a;
+          border-color: #94a3b8;
+        }
+      }
+    }
+  }
+
+  /* Vista previa de la ruta de archivo real */
+  .path-preview {
+    margin-top: 1.5rem;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #166534;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.2rem;
+    line-height: 1.4;
+
+    &__label {
+      font-weight: 700;
+      margin-right: 0.5rem;
+      color: #14532d;
+    }
+
+    &__seg {
+      font-family: monospace;
+      background: #dcfce7;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+
+      &--variable {
+        background: #34d399;
+        color: #064e3b;
+        font-weight: bold;
+      }
+    }
+
+    &__sep {
+      color: #86efac;
+      font-weight: bold;
+      font-family: monospace;
+      padding: 0 0.1rem;
+    }
+
+    &__file {
+      font-family: monospace;
+      font-weight: 600;
+      color: #b91c1c;
+    }
+  }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  .config-wrapper {
+    padding: 1.5rem;
+
+    .config-card {
+      flex-direction: column;
+      /* Apila el icono y el texto en móviles */
+      gap: 1rem;
+
+      .card-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 1.5rem;
+      }
+    }
+
+    .config-footer {
+      flex-direction: column;
+      align-items: stretch;
+
+      .action-buttons {
+        flex-direction: column;
+        margin-left: 0;
+      }
+    }
+  }
+
+  .tree-row {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.2rem;
+    
+    .tree-connector {
+      display: none; // Ocultamos los conectores en móviles muy pequeños para ahorrar espacio
+    }
+    
+    .tree-input-group {
+      width: 100%;
+      .tree-input {
+        width: 100% !important; // El input toma todo el ancho disponible
+      }
+    }
+  }
+  
+  .tree-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

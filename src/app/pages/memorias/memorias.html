@@ -1,0 +1,21 @@
+<div class="memorias">
+  <div class="memorias__tabs">
+    <button class="memorias__tab" [class.memorias__tab--active]="vistaActiva() === 'tabla'"
+            (click)="vistaActiva.set('tabla')">
+      ⊞ Padrón de Predios
+    </button>
+    <button class="memorias__tab" [class.memorias__tab--active]="vistaActiva() === 'formulario'"
+            (click)="vistaActiva.set('formulario')">
+      📄 Memoria Descriptiva
+    </button>
+  </div>
+
+  <div class="memorias__content">
+    @if (vistaActiva() === 'tabla') {
+      <app-tabla-predios />
+    }
+    @if (vistaActiva() === 'formulario') {
+      <app-formulario-memoria />
+    }
+  </div>
+</div>

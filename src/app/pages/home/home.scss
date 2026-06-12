@@ -1,0 +1,220 @@
+// ==========================================
+// 🎨 VARIABLES DEL COMPONENTE "HOME"
+// ==========================================
+
+$home-text-dark: #f8fafc; // AHORA ES BLANCO (Títulos principales de las tarjetas)
+$home-text-base: #f1f5f9; // Texto normal
+$home-text-muted: #94a3b8; // Subtítulos y descripciones
+$home-border: #334155; // Bordes oscuros para el modo dark
+
+// Colores de Acento (Bordes, íconos y sombras)
+$accent-card-1: #3b82f6; // Padrón (Azul)
+$accent-card-2: #10b981; // Visor (Verde)
+$accent-card-3: #f43f5e; // Extracción (Rosa)
+$accent-card-config: #f59e0b; // Configuración (Ámbar)
+
+$transition-card: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+// ==========================================
+// 🏠 CONTENEDOR PRINCIPAL
+// ==========================================
+
+.home-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: 2rem;
+  text-align: center;
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+// ==========================================
+// 🦸‍♂️ SECCIÓN HERO
+// ==========================================
+
+.hero {
+  margin-bottom: 4rem;
+
+  &__title {
+    color: #0f172a; // El título de la página se queda oscuro para el fondo claro global
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 900;
+    letter-spacing: -1px;
+    margin: 0;
+  }
+}
+
+// ==========================================
+// 🃏 CONTENEDOR DE TARJETAS (FLEXBOX INTELIGENTE)
+// ==========================================
+
+.cards-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 5rem;
+  max-width: 1000px;
+  width: 100%;
+}
+
+.card {
+  // 🌟 Magia Flexbox: Se ajustan solas.
+  // Si son 4, quedan 2x2 perfectas. Si sobra una, se centra.
+  flex: 1 1 calc(50% - 2rem);
+  min-width: 280px;
+  max-width: 460px; // Evita que una sola tarjeta se estire por toda la pantalla
+
+  // 🌙 Estilo Oscuro ("Azul noche") para TODAS las tarjetas
+  background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+  padding: 2.5rem 2rem;
+  border-radius: 16px;
+  text-decoration: none;
+  color: $home-text-base;
+  border: 1px solid $home-border;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: $transition-card;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  &__icon {
+    font-size: 2.2rem;
+    margin-bottom: 1.2rem;
+    transition: $transition-card;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 70px;
+    height: 70px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.05); // Fondo sutil redondeado para el ícono
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: $home-text-dark;
+    margin-bottom: 0.8rem;
+  }
+
+  &__desc {
+    color: $home-text-muted;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  // ✨ Efecto genial al pasar el mouse (Se eleva)
+  &:hover {
+    transform: translateY(-6px);
+
+    .card__icon {
+      transform: scale(1.1) translateY(-3px);
+    }
+  }
+
+  // ── Variantes de color específicas (Se encienden con el hover) ──
+  &--primary {
+    .card__icon {
+      color: $accent-card-1;
+      background: rgba($accent-card-1, 0.15);
+    }
+
+    &:hover {
+      border-color: $accent-card-1;
+      box-shadow: 0 15px 30px rgba($accent-card-1, 0.2);
+    }
+  }
+
+  &--secondary {
+    .card__icon {
+      color: $accent-card-2;
+      background: rgba($accent-card-2, 0.15);
+    }
+
+    &:hover {
+      border-color: $accent-card-2;
+      box-shadow: 0 15px 30px rgba($accent-card-2, 0.2);
+    }
+  }
+
+  &--tertiary {
+    .card__icon {
+      color: $accent-card-3;
+      background: rgba($accent-card-3, 0.15);
+    }
+
+    &:hover {
+      border-color: $accent-card-3;
+      box-shadow: 0 15px 30px rgba($accent-card-3, 0.2);
+    }
+  }
+
+  &--config {
+    .card__icon {
+      color: $accent-card-config;
+      background: rgba($accent-card-config, 0.15);
+    }
+
+    &:hover {
+      border-color: $accent-card-config;
+      box-shadow: 0 15px 30px rgba($accent-card-config, 0.2);
+    }
+  }
+}
+
+// ==========================================
+// 👣 FOOTER DE INFORMACIÓN
+// ==========================================
+
+.info-footer {
+  display: flex;
+  gap: 4rem;
+  border-top: 1px solid #cbd5e1; // Línea superior un poco más oscura que el fondo blanco
+  padding-top: 2.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  max-width: 900px;
+
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+
+  .info-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+  }
+
+  .info-value {
+    font-size: 1.1rem;
+    color: #0f172a;
+    font-weight: 600;
+  }
+}
+
+// ==========================================
+// 🎬 KEYFRAMES
+// ==========================================
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

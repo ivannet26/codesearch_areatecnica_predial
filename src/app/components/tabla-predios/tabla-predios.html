@@ -1,0 +1,71 @@
+<div class="tabla-header">
+  <div class="header-actions">
+    <input type="text" placeholder="Buscar en cualquier campo..." [ngModel]="busqueda()"
+      (ngModelChange)="onBusquedaChange($event)" class="search-input" />
+    @if (!loading()) {
+    <span class="result-count">{{ datosFiltrados().length }} registros</span>
+    }
+
+    <!-- Botón Ver Detalle: se activa cuando hay una fila seleccionada -->
+    <button class="btn-visor" [disabled]="!seleccionado()"
+      [title]="!seleccionado() ? 'Selecciona una fila primero' : 'Ver detalle del predio seleccionado'"
+      (click)="onDblClick(seleccionado()!)">
+      📋 Ver Detalle
+    </button>
+
+    <button class="btn-refresh" (click)="cargarDesdeNube()" [disabled]="loading()">
+      {{ loading() ? 'Sincronizando...' : 'Actualizar desde la Nube' }}
+    </button>
+  </div>
+</div>
+
+@if (loading()) {
+<div class="loading-state">
+  <div class="loading-spinner"></div>
+  <p>Conectando con Google Sheets y descargando padrón...</p>
+</div>
+} @else {
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        @for (col of columnas(); track col) {
+        <th>{{ col.split(' - ').pop() }}</th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (fila of datosPagina(); track $index) {
+      <tr (click)="seleccionar(fila)" (dblclick)="onDblClick(fila)" [class.selected]="seleccionado() === fila"
+        title="Doble clic para ver detalle">
+        @for (col of columnas(); track col) {
+        <td [title]="fila[col]">{{ fila[col] }}</td>
+        }
+      </tr>
+      }
+      @if (datosPagina().length === 0) {
+      <tr>
+        <td [attr.colspan]="columnas().length" class="empty-row">
+          No se encontraron resultados para "{{ busqueda() }}"
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+@if (datos().length > 0) {
+<div class="paginacion">
+  <button class="pag-btn" [disabled]="paginaActual() === 1" (click)="irPrimera()">«</button>
+  <button class="pag-btn" [disabled]="paginaActual() === 1" (click)="irAnterior()">‹ Anterior</button>
+  <span class="pag-rango">{{ rangoTexto() }}</span>
+  <button class="pag-btn" [disabled]="paginaActual() === totalPaginas()" (click)="irSiguiente()">Siguiente ›</button>
+  <button class="pag-btn" [disabled]="paginaActual() === totalPaginas()" (click)="irUltima()">»</button>
+  <select class="pag-size" [ngModel]="tamPagina()" (ngModelChange)="cambiarTamPagina(+$event)">
+    <option [ngValue]="25">25 / pág</option>
+    <option [ngValue]="50">50 / pág</option>
+    <option [ngValue]="100">100 / pág</option>
+  </select>
+</div>
+}
+}
