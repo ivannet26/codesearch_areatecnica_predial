@@ -1,0 +1,296 @@
+<div class="config-tas">
+  <div class="config-tas__header">
+    <div class="config-tas__title-group">
+      <span class="config-tas__icon">⚙️</span>
+      <div>
+        <h1 class="config-tas__title">Configuración de Tasaciones</h1>
+        <p class="config-tas__sub">Administra las conexiones y parámetros del sistema de tasaciones</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="config-tas__tabs">
+    <button class="config-tas__tab" [class.config-tas__tab--active]="tabActivo === 'urls'" (click)="tabActivo = 'urls'">
+      🔗 URLs & Scripts
+    </button>
+    <button class="config-tas__tab" [class.config-tas__tab--active]="tabActivo === 'imagenes'"
+      (click)="tabActivo = 'imagenes'">
+      🖼️ Imágenes
+    </button>
+    <button class="config-tas__tab" [class.config-tas__tab--active]="tabActivo === 'operacion'"
+      (click)="tabActivo = 'operacion'">
+      🚀 Procesar Reporte
+    </button>
+  </div>
+
+  <div class="config-tas__body">
+
+    <!-- ==================== TAB: urls ==================== -->
+    @if (tabActivo === 'urls') {
+    <div class="config-card">
+      <div class="config-card__head">
+        <span class="config-card__icon config-card__icon--amber">🔗</span>
+        <div>
+          <h2 class="config-card__title">URLs del Sistema de Tasaciones</h2>
+          <p class="config-card__desc">Rutas de Google Sheets, Apps Script y carpetas de Google Drive.</p>
+        </div>
+      </div>
+      <div class="config-card__body">
+
+        <!-- URL Padrón -->
+        <div class="config-field">
+          <label class="config-field__label">URL Padrón de Tasaciones (Google Sheets)</label>
+          <div class="config-field__row">
+            @if (isEditing()) {
+            <input type="text" class="config-field__input" placeholder="https://docs.google.com/spreadsheets/d/..."
+              [ngModel]="editUrlPadron()" (ngModelChange)="editUrlPadron.set($event)" />
+            } @else {
+            <input type="text" class="config-field__input config-field__input--readonly" [value]="urlPadronTasaciones"
+              readonly />
+            }
+            <button class="config-field__btn config-field__btn--test" (click)="probarUrl('tasaciones')"
+              [disabled]="isEditing() ? !editUrlPadron() : !urlPadronTasaciones">
+              Probar
+            </button>
+          </div>
+        </div>
+
+        <!-- URL Apps Script -->
+        <div class="config-field">
+          <label class="config-field__label">URL Apps Script — Generación del DMD</label>
+          <p class="config-field__hint">El script recibe los datos de Angular y genera el Excel en Drive. No necesitas
+            abrirlo manualmente.</p>
+          <div class="config-field__row">
+            @if (isEditing()) {
+            <input type="text" class="config-field__input" placeholder="https://script.google.com/macros/s/..."
+              [ngModel]="editUrlScript()" (ngModelChange)="editUrlScript.set($event)" />
+            } @else {
+            <input type="text" class="config-field__input config-field__input--readonly" [value]="urlScriptTasaciones"
+              readonly />
+            }
+            <button class="config-field__btn config-field__btn--test" (click)="probarUrl('script')"
+              [disabled]="isEditing() ? !editUrlScript() : !urlScriptTasaciones">
+              Probar
+            </button>
+          </div>
+        </div>
+
+        <!-- Carpeta Datos (donde se guarda el reporte.xlsx) -->
+        <div class="config-field">
+          <label class="config-field__label">ID Carpeta de Datos — donde se guarda el reporte.xlsx</label>
+          <p class="config-field__hint">Esta es la carpeta en Google Drive donde el Apps Script deposita el Excel
+            generado.</p>
+          <div class="config-field__row">
+            @if (isEditing()) {
+            <input type="text" class="config-field__input" placeholder="ID de la carpeta de Drive (ej: 1GCovqQ...)"
+              [ngModel]="editCarpetaDatosId()" (ngModelChange)="editCarpetaDatosId.set($event)" />
+            } @else {
+            <input type="text" class="config-field__input config-field__input--readonly" [value]="carpetaDatosId"
+              readonly />
+            }
+            <button class="config-field__btn config-field__btn--test" (click)="probarUrl('carpeta_datos')"
+              [disabled]="isEditing() ? !editCarpetaDatosId() : !carpetaDatosId" title="Abrir carpeta en Google Drive">
+              📂 Abrir
+            </button>
+          </div>
+          @if (linkCarpetaDatos) {
+          <a [href]="linkCarpetaDatos" target="_blank" class="config-field__link">
+            🔗 Ver carpeta de reportes en Drive
+          </a>
+          }
+        </div>
+
+      </div>
+    </div>
+    }
+
+    <!-- ==================== TAB: Imágenes ==================== -->
+    @if (tabActivo === 'imagenes') {
+    <div class="config-card">
+      <div class="config-card__head">
+        <span class="config-card__icon config-card__icon--amber">🖼️</span>
+        <div>
+          <h2 class="config-card__title">Imágenes</h2>
+          <p class="config-card__desc">Nombres de archivo y ubicación de los logos usados en las tasaciones.</p>
+        </div>
+      </div>
+      <div class="config-card__body">
+
+        <div class="config-field">
+          <label class="config-field__label">ID Carpeta de Imágenes (Google Drive)</label>
+          <p class="config-field__hint">Carpeta donde están logo_izquierdo.png y logo_derecho.png.</p>
+          <div class="config-field__row">
+            @if (isEditing()) {
+            <input type="text" class="config-field__input" placeholder="ID de la carpeta de Drive..."
+              [ngModel]="editCarpetaImagenesId()" (ngModelChange)="editCarpetaImagenesId.set($event)" />
+            } @else {
+            <input type="text" class="config-field__input config-field__input--readonly" [value]="carpetaImagenesId"
+              readonly />
+            }
+            <button class="config-field__btn config-field__btn--test" (click)="probarUrl('carpeta_imagenes')"
+              [disabled]="isEditing() ? !editCarpetaImagenesId() : !carpetaImagenesId">
+              📂 Abrir
+            </button>
+          </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+
+        <div class="config-field">
+          <label class="config-field__label">Logo Izquierdo</label>
+          <div class="config-field__row">
+            @if (isEditing()) {
+            <input type="text" class="config-field__input" placeholder="logo_izquierdo.png"
+              [ngModel]="editLogoIzquierdo()" (ngModelChange)="editLogoIzquierdo.set($event)" />
+            } @else {
+            <input type="text" class="config-field__input config-field__input--readonly" [value]="logoIzquierdo"
+              readonly />
+            }
+            <button class="config-field__btn config-field__btn--test" (click)="probarUrl('logo_izquierdo')"
+              [disabled]="isEditing() ? !editLogoIzquierdo() : !logoIzquierdo">
+              Probar
+            </button>
+          </div>
+        </div>
+
+        <div class="config-field">
+          <label class="config-field__label">Logo Derecho</label>
+          <div class="config-field__row">
+            @if (isEditing()) {
+            <input type="text" class="config-field__input" placeholder="logo_derecho.png" [ngModel]="editLogoDerecho()"
+              (ngModelChange)="editLogoDerecho.set($event)" />
+            } @else {
+            <input type="text" class="config-field__input config-field__input--readonly" [value]="logoDerecho"
+              readonly />
+            }
+            <button class="config-field__btn config-field__btn--test" (click)="probarUrl('logo_derecho')"
+              [disabled]="isEditing() ? !editLogoDerecho() : !logoDerecho">
+              Probar
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    }
+
+    <!-- ==================== TAB 3: PROCESAR Y ENVIAR REPORTE ==================== -->
+    @if (tabActivo === 'operacion') {
+    <div class="config-card">
+      <div class="config-card__head">
+        <span class="config-card__icon config-card__icon--blue">🚀</span>
+        <div>
+          <h2 class="config-card__title">Procesamiento y Despacho Operativo</h2>
+          <p class="config-card__desc">Gestiona la jerarquía dinámica de carpetas de destino.</p>
+        </div>
+      </div>
+
+      <div class="config-card__body">
+        <div class="route-container"
+          style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+
+          <div class="config-field" style="margin-bottom: 20px;">
+            <label class="config-field__label" style="color: #4a5568; font-weight: 600;">📁 Carpeta Destino de Datos
+              (Raíz donde se guarda el reporte)</label>
+            <div class="config-field__row" style="margin-top: 6px;">
+              @if (isEditing()) {
+              <input type="text" class="config-field__input" [ngModel]="editCarpetaDatosId()"
+                (ngModelChange)="editCarpetaDatosId.set($event)" placeholder="ID de la carpeta en Google Drive..."
+                style="border-radius: 8px;" />
+              } @else {
+              <input type="text" class="config-field__input config-field__input--readonly" [value]="carpetaDatosId"
+                readonly style="border-radius: 8px; background: #f7fafc;" />
+              }
+              <button class="config-field__btn config-field__btn--test" (click)="probarUrl('carpeta_datos')"
+                style="border-radius: 8px; height: 42px;">
+                📂 Abrir
+              </button>
+            </div>
+            @if (linkCarpetaDatos) {
+            <a [href]="linkCarpetaDatos" target="_blank" class="config-field__link">
+              🔗 Ver carpeta en Drive
+            </a>
+            }
+          </div>
+
+          <label class="config-field__label"
+            style="color: #4a5568; font-weight: 600; display: block; margin-bottom: 10px;">🌿 Estructura Dinámica de
+            Guardado</label>
+
+          @if (!isEditing()) {
+          <div class="folder-tree"
+            style="margin-bottom: 0; background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px dashed #e2e8f0;">
+            <div class="tree-row tree-row--root">
+              <span class="tree-icon">📁</span>
+              <span class="tree-label tree-label--root" style="color: #4a5568; font-weight: 600;">Raíz principal</span>
+            </div>
+            @for (nivel of estructuraCarpetas; track $index) {
+            <div class="tree-row">
+              <span class="tree-connector">├──</span>
+              <span class="tree-icon">📁</span>
+              <span class="tree-label--readonly"
+                style="background: #edf2f7; color: #2b6cb0; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 13px;">{{
+                nivel }}</span>
+            </div>
+            }
+            <div class="tree-row tree-row--file">
+              <span class="tree-connector">└──</span>
+              <span class="tree-icon">📊</span>
+              <span class="tree-label--file" [style.color]="archivoSeleccionado ? '#38a169' : '#a0aec0'"
+                style="font-weight: 600; font-style: italic;">
+                {{ archivoSeleccionado ? archivoSeleccionado.name : '[reporte.xlsx]' }}
+              </span>
+            </div>
+          </div>
+          } @else {
+          <div class="folder-tree"
+            style="margin-bottom: 12px; background: #fffcf5; padding: 16px; border-radius: 8px; border: 1px solid #feebc8;">
+            <div class="tree-row tree-row--root">
+              <span class="tree-icon">📁</span>
+              <span class="tree-label tree-label--root" style="color: #dd6b20;">Configurando Estructura...</span>
+            </div>
+            @for (nivel of editEstructura(); track $index) {
+            <div class="tree-row">
+              <span class="tree-connector">├──</span>
+              <span class="tree-icon">📁</span>
+              <div class="tree-input-group">
+                <input type="text" class="tree-input" [ngModel]="nivel"
+                  (ngModelChange)="actualizarNivel($index, $event)" (focus)="nivelEnfocado = $index"
+                  placeholder="Nombre de carpeta">
+                <button class="btn-remove-level" (click)="eliminarNivel($index)">✕</button>
+              </div>
+            </div>
+            }
+          </div>
+          <div class="tree-controls" style="margin-bottom: 0; padding: 0 4px;">
+            <button class="btn-add-level" (click)="agregarNivel()" style="padding: 6px 14px; font-size: 13px;">➕ Añadir
+              Carpeta Intermedia</button>
+            <div class="variable-badges">
+              <button class="badge" (click)="inyectarVariable('{codigo}')">&#123;codigo&#125;</button>
+              <button class="badge" (click)="inyectarVariable('{proyecto}')">&#123;proyecto&#125;</button>
+              <button class="badge" (click)="inyectarVariable('{fecha}')">&#123;fecha&#125;</button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+    }
+  </div>
+
+  <!-- ==================== PIE DE PÁGINA ==================== -->
+  <div class="config-tas__footer">
+    @if (mensaje()) {
+    <span class="config-tas__saved">✔ {{ mensaje() }}</span>
+    }
+    <div class="carpetas-actions">
+      @if (!isEditing()) {
+      <button class="btn-editar" (click)="activarEdicion()">✏️ Editar Ajustes</button>
+      <button class="btn-restaurar" (click)="restaurarDefaults()">🔄 Restaurar desde config.json</button>
+      } @else {
+      <button class="btn-restaurar" (click)="cancelarEdicion()">✕ Cancelar</button>
+      <button class="btn-editar" (click)="guardarEdicion()">Guardar Cambios</button>
+      }
+    </div>
+  </div>
+</div>

@@ -7,6 +7,9 @@ import { UrlsConfigService } from '../../services/urls-config.service';
 import { Router } from '@angular/router';
 import * as XLSX from 'xlsx';
 
+// Import nuevo
+import { AnexosFotograficosService, AnexoFotografico } from '../../services/anexos-fotograficos';
+
 import {
   Memoria, Titular, Coordenada, ObraComplementaria,
   Plantacion, ElementoTasar, Anexo
@@ -74,6 +77,7 @@ export class FormularioMemoriaComponent implements OnInit {
   private excelService = inject(ExcelService);
   private urlsService = inject(UrlsConfigService);
   private router = inject(Router);
+  private anexosSvc = inject(AnexosFotograficosService);
 
   seccionActiva = 1;
   isEditing = false;
@@ -90,6 +94,7 @@ export class FormularioMemoriaComponent implements OnInit {
     tipoPoligono?: string;
     toleranciaMaxima?: string;
     descripcionAreaTechada?: string;
+    documentosAdjuntos?: string[];
   } = this.getVacia();
 
   enviando = signal(false);
@@ -207,6 +212,7 @@ export class FormularioMemoriaComponent implements OnInit {
     { num: 4, titulo: 'Predio (Matriz)' }, { num: 5, titulo: 'Entorno' }, { num: 6, titulo: 'Terreno Afectado' },
     { num: 7, titulo: 'Edificaciones' }, { num: 8, titulo: 'Plantaciones' }, { num: 9, titulo: 'Perjuicio Econ.' },
     { num: 10, titulo: 'Elem. a Tasar' }, { num: 11, titulo: 'Documentos' }, { num: 12, titulo: 'Observaciones' },
+    { num: 13, titulo: 'Panel Fotográfico' }, // 👈 NUEVO
   ];
 
   irA(num: number): void { this.seccionActiva = num; }
@@ -228,6 +234,36 @@ export class FormularioMemoriaComponent implements OnInit {
         this._rellenarDesde(filas[0], filas);
       }
     }
+  }
+
+  anexosDePanel(): AnexoFotografico[] {
+    const cod = this.memoria.codigo;
+    return cod ? this.anexosSvc.imagenesDe(cod) : [];
+  }
+
+  async onSeleccionArchivosPanel(event: Event): Promise<void> {
+    const codigo = this.memoria.codigo;
+    if (!codigo) {
+      alert('El expediente no tiene código todavía. Ingresa/carga el código antes de agregar fotos.');
+      return;
+    }
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+
+    const resultado = await this.anexosSvc.agregarArchivos(codigo, input.files);
+    input.value = '';
+
+    if (resultado.rechazados.length > 0) {
+      alert('Solo se admiten imágenes PNG. Se omitieron: ' + resultado.rechazados.join(', '));
+    }
+  }
+
+  moverImagenPanel(id: string, direccion: -1 | 1): void {
+    if (this.memoria.codigo) this.anexosSvc.mover(this.memoria.codigo, id, direccion);
+  }
+
+  eliminarImagenPanel(id: string): void {
+    if (this.memoria.codigo) this.anexosSvc.eliminar(this.memoria.codigo, id);
   }
 
   irPrimerPredio(): void { if (this.totalPredios() > 0) this._cargarPredioEnIndice(0); }
@@ -384,7 +420,7 @@ export class FormularioMemoriaComponent implements OnInit {
     // ── Sección 1 ────────────────────────────────────────────────────────────
     this.memoria.codigo = codigoClave;
     this.memoria.proyecto = s('proyecto', 'nombre de proyecto');
-    this.memoria.condicionJuridica = s('condicion juridica', 'condición jurídica', 'clasificacion art', 'tipo de condicion');
+    this.memoria.condicionJuridica = s('condicion juridica');
 
     const rawTitulares = s('identificacion de sujeto pasivo', 'nombres de afectados', 'nombre titular 1');
     const rawDnis = s('dni / ruc', 'dni/ruc', 'dni ruc', 'dni');
@@ -431,8 +467,8 @@ export class FormularioMemoriaComponent implements OnInit {
     this.memoria.partidaRegistral = s('partida electronica', 'partida registral', 'partida');
     this.memoria.fechaEmision = this.formatearFecha(s('fecha de adquisicion', 'fecha de emision', 'fecha emision'));
     this.memoria.entidad = s('entidad', 'entidad registral');
-    this.memoria.documentoTitularidad = s('documento adjunto', 'estado del predio');
-    this.memoria.entidadSolicitante = s('entidad (2)');
+    this.memoria.documentoTitularidad = s('DOCUMENTO ADJUNTO');
+    this.memoria.entidadSolicitante = s('entidad');
 
     this.memoria.progresivaInicio = this._parsearProgresiva(s('inicio km', 'progresiva inicio'), 'inicio');
     this.memoria.progresivaFinal = this._parsearProgresiva(s('fin km', 'progresiva final'), 'fin');
@@ -479,7 +515,7 @@ export class FormularioMemoriaComponent implements OnInit {
     this.memoria.usoActualEntorno = s('uso actual entorno', 'uso entorno') || this.memoria.usoActual;
     this.memoria.topografia = s('topografia', 'topografía', 'tipo de suelo', 'tipo suelo');
     this.memoria.pendiente = s('pendiente');
-    //this.memoria.accesibilidad = s('accesibilidad', 'abastecimiento de agua', 'abastecimiento agua');
+    this.memoria.accesibilidad = s('accesibilidad');
     this.memoria.tipoCultivos = s('tipo de cultivos predominantes', 'tipo de cultivos', 'tipo cultivos', 'cultivos');
     this.memoria.tipoRiego = s('tipo de riego', 'tipo riego');
     this.memoria.clima = s('clima');
@@ -564,8 +600,8 @@ export class FormularioMemoriaComponent implements OnInit {
               areaDirectaM2: areaDir,
               areaIndirectaM2: areaInd,
               aleros: 0,
-              uso: sP('uso'),
-              antiguedad: sP('antiguedad', 'antigüedad'),
+              uso: sNP('uso') || (idx > 0 ? filas[0] && this._sBuscarNormalizado(filas[0], 'uso') : ''),
+              antiguedad: sNP('antiguedad', 'antigüedad') || (idx > 0 ? this._sBuscarNormalizado(filas[0], 'antiguedad', 'antigüedad') : ''),
               materialPredominante: matPred,
               materialMuros: muros || matPred,
               materialTecho: techos,
@@ -695,7 +731,7 @@ export class FormularioMemoriaComponent implements OnInit {
         const desc = descDetallada || descSimple;
         if (!desc) continue;
 
-        const antiguedad = (() => { for (const suf of sufs) { const v = buscarExactoEnFila(filaBase, `${ocStr} - antiguedad`, `${ocStr} - antigüedad`); if (v) return v; } return ''; })();
+        const antiguedad = (() => { for (const suf of sufs) { const v = buscarExactoEnFila(filaBase, `${ocStr} - c`, `${ocStr} - antigüedad`); if (v) return v; } return ''; })();
         const material = (() => { for (const suf of sufs) { const v = buscarExactoEnFila(filaBase, `${ocStr} - material`, `${ocStr} - material predominante`); if (v) return v; } return ''; })();
         const estadoConserv = (() => { for (const suf of sufs) { const v = buscarExactoEnFila(filaBase, `${ocStr} - estado de conservacion`, `${ocStr} - conservacion`); if (v) return v; } return ''; })();
         const estadoConstr = (() => { for (const suf of sufs) { const v = buscarExactoEnFila(filaBase, `${ocStr} - estado de construccion`, `${ocStr} - construccion`); if (v) return v; } return ''; })();
@@ -1134,10 +1170,29 @@ export class FormularioMemoriaComponent implements OnInit {
       elems[8].descripcion = this.memoria.plantacionesFrutales[0].nombreComun;
       elems[8].cantidad = this.memoria.plantacionesFrutales[0].cantidad || null;
     }
-
-    this.memoria.observaciones = [
-      s('OBSERVACIONES PARA MD','Observaciones para MD', "Observaciones para md")
-    ];
+    const observacionesGuardadas = s('observaciones');
+    if (observacionesGuardadas) {
+      try {
+        const parsed = JSON.parse(observacionesGuardadas);
+        if (Array.isArray(parsed) && parsed.length > 0) this.memoria.observaciones = parsed;
+      } catch (e) { }
+    }
+    if (!this.memoria.observaciones || this.memoria.observaciones.length === 0) {
+      const rawObservaciones = sN('OBSERVACIONES PARA MD', 'Observaciones para MD', 'observaciones para md', 'observaciones');
+      this.memoria.observaciones = this._splitTitulares(rawObservaciones);
+    }
+    const documentosAdjuntosGuardados = s('documentosAdjuntos');
+    console.log('🔍 RAW documentos adjuntos:', JSON.stringify(sN('documentos adjuntos', 'documento adjuntos', 'documentos adjunto')));
+    if (documentosAdjuntosGuardados) {
+      try {
+        const parsed = JSON.parse(documentosAdjuntosGuardados);
+        if (Array.isArray(parsed) && parsed.length > 0) this.memoria.documentosAdjuntos = parsed;
+      } catch (e) { }
+    }
+    if (!this.memoria.documentosAdjuntos || this.memoria.documentosAdjuntos.length === 0) {
+      const rawDocumentosAdjuntos = sN('DA MD FINAL');
+      this.memoria.documentosAdjuntos = this._splitTitulares(rawDocumentosAdjuntos);
+    }
 
     const coordsGuardadas = s('coordenadas');
     if (coordsGuardadas) {
@@ -1274,6 +1329,8 @@ export class FormularioMemoriaComponent implements OnInit {
     const titulares = this.memoria.titulares.map(t => t.nombre).filter(Boolean).join('\n');
     const dnis = this.memoria.titulares.map(t => t.dniRuc).filter(Boolean).join('\n');
     const estadosCiviles = this.memoria.titulares.map(t => t.estadoCivil).filter(Boolean).join('\n');
+    const documentosAdjuntosTexto = (this.memoria.documentosAdjuntos ?? []).filter(Boolean).join('\n');
+    const observacionesTexto = (this.memoria.observaciones ?? []).filter(Boolean).join('\n\n');
     set('IDENTIFICACION DE SUJETO PASIVO - NOMBRES DE AFECTADOS', titulares);
     set('DNI / RUC', dnis);
     set('ESTADO CIVIL', estadosCiviles);
@@ -1300,7 +1357,9 @@ export class FormularioMemoriaComponent implements OnInit {
     set('TIPO DE RIEGO', this.memoria.tipoRiego);
     set('CLIMA', this.memoria.clima);
     set('INFRAESTRUCTURA DE RIEGO', this.memoria.infraestructuraRiego);
-    set('OBSERVACIONES', Array.isArray(this.memoria.observaciones) ? this.memoria.observaciones[0] || '' : '');
+    set('DOCUMENTOS ADJUNTOS', documentosAdjuntosTexto);
+
+    set('OBSERVACIONES PARA MD', observacionesTexto);
     set('CONCLUSIONES', Array.isArray(this.memoria.observaciones) ? this.memoria.observaciones[1] || '' : '');
     set('RECOMENDACIONES', Array.isArray(this.memoria.observaciones) ? this.memoria.observaciones[2] || '' : '');
 
@@ -1391,6 +1450,11 @@ export class FormularioMemoriaComponent implements OnInit {
         ...this._sheetsConfig(),
         filaDatos: predio,
         memoriaCompleta: this._serializarMemoria(),
+        anexosFotograficos: JSON.stringify(   // 👈 NUEVO — separado, no va a la hoja plana
+          this.anexosSvc.imagenesDe(this.memoria.codigo).map(a => ({
+            nombre: a.nombre, base64: a.base64, mimeType: a.mimeType, ancho: a.ancho, alto: a.alto
+          }))
+        ),
         carpetaExcelId: this.urlsService.getActiveCarpetaExcelId(),
         estructuraCarpetas: this.urlsService.getActiveEstructuraCarpetas(),
       };
@@ -1566,18 +1630,38 @@ export class FormularioMemoriaComponent implements OnInit {
 
   private procesarDatosExtraidos(data: any[][], tipo: 'matriz' | 'afectada', areaIndex: number = 0): void {
     const nuevasCoords: Coordenada[] = [];
-    let inicio = 0;
-    for (let i = 0; i < data.length; i++) {
+
+    // 🆕 Paso 1: buscar fila de encabezados explícita (VÉRTICE/LADO/DISTANCIA/ESTE/NORTE)
+    // y empezar justo después, ignorando filas anteriores (logo, títulos, etc.)
+    const normCab = (s: any) => String(s ?? '').toLowerCase().trim()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    let inicio = -1;
+    for (let i = 0; i < Math.min(data.length, 15); i++) {
       const row = data[i];
-      if (!row || row.length < 2) continue;
-      const tieneCoordUTM = row.some((v: any) => {
-        const n = parseFloat(String(v ?? '').replace(',', '.'));
-        return !isNaN(n) && n > 100000;
-      });
-      if (tieneCoordUTM) { inicio = i; break; }
-      const primerNum = parseFloat(String(row[0] ?? '').replace(',', '.'));
-      if (!isNaN(primerNum) && primerNum > 0 && primerNum < 10000) { inicio = i; break; }
+      if (!row) continue;
+      const rowNorm = row.map(normCab);
+      const tieneVertice = rowNorm.some(c => c.includes('vertice'));
+      const tieneLado = rowNorm.some(c => c === 'lado' || c.includes('lado'));
+      const tieneCoordCols = rowNorm.some(c => c.includes('este') || c.includes('norte'));
+      if (tieneVertice && (tieneLado || tieneCoordCols)) { inicio = i + 1; break; }
     }
+
+    // Paso 2: si no se encontró encabezado, usar la heurística numérica de respaldo
+    if (inicio === -1) {
+      inicio = 0;
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        if (!row || row.length < 2) continue;
+        const tieneCoordUTM = row.some((v: any) => {
+          const n = parseFloat(String(v ?? '').replace(',', '.'));
+          return !isNaN(n) && n > 100000;
+        });
+        if (tieneCoordUTM) { inicio = i; break; }
+        const primerNum = parseFloat(String(row[0] ?? '').replace(',', '.'));
+        if (!isNaN(primerNum) && primerNum > 0 && primerNum < 10000) { inicio = i; break; }
+      }
+    }
+    // ... el resto del método sigue igual desde aquí (el for que arranca en `inicio`)
 
     for (let i = inicio; i < data.length; i++) {
       const row = data[i];
@@ -1905,14 +1989,27 @@ export class FormularioMemoriaComponent implements OnInit {
     const v8_1_3 = v8 && this.config.plantaciones && isV('blk_8_1_3', true);
     const v8_2 = v8 && this.config.plantaciones && isV('blk_8_2', true);
 
-    // ── REPLACER PARA SUB-ARREGLOS (Convierte 0 a "-" en propiedades internas) ──
     const jsonReplacer = (key: string, value: any) => {
       if (value === 0 || value === '0') return '-';
+      if (typeof value === 'number') return value.toFixed(2);
+      if (typeof value === 'string' && value.trim() !== '' && value !== '-') {
+        const trimmed = value.trim();
+        // Solo convertir si es PURAMENTE numérico (no "6 años", "12 meses", etc.)
+        if (/^\d+([.,]\d+)?$/.test(trimmed)) {
+          const n = parseFloat(trimmed.replace(',', '.'));
+          if (!isNaN(n)) return n.toFixed(2);
+        }
+      }
       return value;
     };
-
     // ── REPLACER PARA CAMPOS DIRECTOS RAÍZ ──
-    const zeroToDash = (val: any) => (val === 0 || val === '0') ? '-' : val;
+    const fmt2 = (val: any): any => {
+      if (val === null || val === undefined) return null;
+      const n = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.'));
+      if (isNaN(n)) return val;
+      if (n === 0) return '-';
+      return n.toFixed(2); // string con 2 decimales fijos
+    };
 
     return {
       codigo: this.memoria.codigo,
@@ -1929,6 +2026,7 @@ export class FormularioMemoriaComponent implements OnInit {
       partidaRegistral: v1_docs ? this.memoria.partidaRegistral : null,
       fechaEmision: v1_docs ? this.memoria.fechaEmision : null,
       entidad: v1_docs ? this.memoria.entidad : null,
+      documentoTitularidad: v1_docs ? this.memoria.documentoTitularidad : null,
       entidadSolicitante: v2 && isV('f_entSolicitante', this.memoria.entidadSolicitante) && this.config.datosSolicitante ? this.memoria.entidadSolicitante : null,
       progresivaInicio: v3_gen ? this.memoria.progresivaInicio : null,
       progresivaFinal: v3_gen ? this.memoria.progresivaFinal : null,
@@ -1951,15 +2049,15 @@ export class FormularioMemoriaComponent implements OnInit {
       lote: v3_ubi ? this.memoria.lote : null,
 
       // Aplicación en valores de la raíz
-      areaMatrizM2: zeroToDash(v4_1 ? this.memoria.areaMatrizM2 : null),
+      areaMatrizM2: fmt2(v4_1 ? this.memoria.areaMatrizM2 : null),
       colindanciaNorte: v4_2 ? this.memoria.colindanciaNorte : null,
-      longitudNorte: zeroToDash(v4_2 ? this.memoria.longitudNorte : null),
+      longitudNorte: fmt2(v4_2 ? this.memoria.longitudNorte : null),
       colindanciaSur: v4_2 ? this.memoria.colindanciaSur : null,
-      longitudSur: zeroToDash(v4_2 ? this.memoria.longitudSur : null),
+      longitudSur: fmt2(v4_2 ? this.memoria.longitudSur : null),
       colindanciaEste: v4_2 ? this.memoria.colindanciaEste : null,
-      longitudEste: zeroToDash(v4_2 ? this.memoria.longitudEste : null),
+      longitudEste: fmt2(v4_2 ? this.memoria.longitudEste : null),
       colindanciaOeste: v4_2 ? this.memoria.colindanciaOeste : null,
-      longitudOeste: zeroToDash(v4_2 ? this.memoria.longitudOeste : null),
+      longitudOeste: fmt2(v4_2 ? this.memoria.longitudOeste : null),
 
       // Aplicación pasándole el replacer a los sub-JSON strings
       coordenadas: v4_3 ? JSON.stringify(this.memoria.coordenadas, jsonReplacer) : '[]',
@@ -1971,11 +2069,11 @@ export class FormularioMemoriaComponent implements OnInit {
       tipoRiego: v5_ent && this.config.datosEntorno ? this.memoria.tipoRiego : null,
       clima: v5_ent && this.config.datosEntorno ? this.memoria.clima : null,
       infraestructuraRiego: v5_ent && this.config.datosEntorno ? this.memoria.infraestructuraRiego : null,
-      areaTotalPredioM2: zeroToDash(v6_1 ? this.memoria.areaTotalPredioM2 : null),
-      areaAfectadaDirectaM2: zeroToDash(v6_1 ? this.memoria.areaAfectadaDirectaM2 : null),
-      areaAfectadaIndirectaM2: zeroToDash(v6_1 ? this.memoria.areaAfectadaIndirectaM2 : null),
-      areaAfectadaTotalM2: zeroToDash(v6_1 ? this.memoria.areaAfectadaTotalM2 : null),
-      areaRemanenteM2: zeroToDash(v6_1 ? this.memoria.areaRemanenteM2 : null),
+      areaTotalPredioM2: fmt2(v6_1 ? this.memoria.areaTotalPredioM2 : null),
+      areaAfectadaDirectaM2: fmt2(v6_1 ? this.memoria.areaAfectadaDirectaM2 : null),
+      areaAfectadaIndirectaM2: fmt2(v6_1 ? this.memoria.areaAfectadaIndirectaM2 : null),
+      areaAfectadaTotalM2: fmt2(v6_1 ? this.memoria.areaAfectadaTotalM2 : null),
+      areaRemanenteM2: fmt2(v6_1 ? this.memoria.areaRemanenteM2 : null),
       areasAfectadas: JSON.stringify(areasAfectadasFiltradas, jsonReplacer),
       descripcionAreaTechada: v7_1 ? this.memoria.descripcionAreaTechada : null,
       afectaAreaTechada: v7_1 ? this.memoria.afectaAreaTechada : false,
@@ -1995,7 +2093,8 @@ export class FormularioMemoriaComponent implements OnInit {
       lucroCesante: v9 && this.config.perjuicioEconomico ? this.memoria.lucroCesante : false,
       elementosATasar: v10 ? JSON.stringify(this.memoria.elementosATasar, jsonReplacer) : '[]',
       anexos: v11 && this.config.documentosAdjuntos ? JSON.stringify(this.memoria.anexos, jsonReplacer) : '[]',
-      observaciones: v12 && this.config.observaciones ? (Array.isArray(this.memoria.observaciones) ? this.memoria.observaciones.filter((o: any) => o?.trim()).join('\n\n') : this.memoria.observaciones) : null,
+      documentosAdjuntos: v11 && this.config.documentosAdjuntos ? JSON.stringify(this.memoria.documentosAdjuntos, jsonReplacer) : '[]',
+      observaciones: v12 && this.config.observaciones ? JSON.stringify((this.memoria.observaciones ?? []).filter((o: any) => o?.trim())) : '[]',
       fechaEnvio: new Date().toLocaleString('es-PE', { timeZone: 'America/Lima', hour12: false }),
       visibilidadManual: JSON.stringify(this.visibilidadManual),
     };
@@ -2202,6 +2301,30 @@ export class FormularioMemoriaComponent implements OnInit {
     }
   }
 
+  agregarDocumentoAdjunto(): void {
+    if (!this.isEditing) return;
+    if (!this.memoria.documentosAdjuntos) this.memoria.documentosAdjuntos = [];
+    this.memoria.documentosAdjuntos.push('');
+  }
+
+  eliminarDocumentoAdjunto(i: number): void {
+    if (!this.isEditing) return;
+    if (!this.memoria.documentosAdjuntos) return;
+    this.memoria.documentosAdjuntos.splice(i, 1);
+  }
+
+  agregarObservacion(): void {
+    if (!this.isEditing) return;
+    if (!this.memoria.observaciones) this.memoria.observaciones = [];
+    this.memoria.observaciones.push('');
+  }
+
+  eliminarObservacion(i: number): void {
+    if (!this.isEditing) return;
+    if (!this.memoria.observaciones) return;
+    this.memoria.observaciones.splice(i, 1);
+  }
+
   // ─── PLANTACIONES ─────────────────────────────────────────────────────────
   agregarPlantacion(tipo: TipoPlantacion): void {
     if (!this.isEditing) return;
@@ -2286,7 +2409,8 @@ export class FormularioMemoriaComponent implements OnInit {
         { descripcion: '4.2 Lucro cesante', unidad: '-', cantidad: '-', esEncabezado: false },
         { descripcion: 'Afectación de negocio en marcha', unidad: 'Glb', cantidad: '1,00', esEncabezado: false }
       ],
-      anexos: [], observaciones: ['', '', ''],
+      anexos: [], observaciones: [],
+      documentosAdjuntos: [],
     };
   }
 

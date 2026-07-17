@@ -40,6 +40,7 @@ export class DatosCadComponent {
   loading = signal(false);
   mensaje = signal('');
   nivelEnfocado = signal<number | null>(null);
+  tabActivo: 'urls' | 'hojas' | 'carpetas' = 'urls';
 
   // ── Edición general ───────────────────────────────────────────────
   activarEdicion() {

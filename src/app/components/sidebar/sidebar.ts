@@ -13,8 +13,10 @@ export class SidebarComponent {
   collapsed = input(false);
 
   navItems = [
-    { label: 'Inicio',            icon: '⌂',  route: '/home'        },
-    { label: 'Padrón de Predios', icon: '⊞',  route: '/padron'      },
-    { label: 'Configuración',     icon: '⚙️', route: '/cad'         },
+    { route: '/home', icon: '🏠', label: 'Inicio' },
+    { route: '/padron', icon: '⊞', label: 'Padrón de Predios' },
+    { route: '/tasaciones', icon: '💰', label: 'Padrón de Tasaciones' },
+    { route: '/configuracion', icon: '⚙️', label: 'Configuración Predios' },
+    { route: '/configuracion-tasaciones', icon: '🛠️', label: 'Configuración Tasaciones' },
   ];
 }

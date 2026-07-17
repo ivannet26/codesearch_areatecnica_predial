@@ -1125,6 +1125,7 @@ tr.fila-encabezado td {
 .input-textarea--expandida {
   min-height: 120px;
   max-height: 500px;
+  width: 650px;
   resize: vertical;
   overflow-y: auto;
   line-height: 1.6;
@@ -1145,7 +1146,7 @@ tr.fila-encabezado td {
 // FIX 4: Bloque independiente por sub-sección de plantaciones
 .sub-bloque {
   margin-top: 1.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.75rem; // 👈 antes 1rem
   padding: 1rem 1.25rem;
   border-left: 3px solid #e8a617;
   background: rgba(232, 166, 23, 0.04);
@@ -1673,7 +1674,8 @@ tr.fila-encabezado td {
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 
-  &--active, &:hover {
+  &--active,
+  &:hover {
     background: var(--c-orange);
     color: #fff;
     border-color: var(--c-orange);
@@ -1684,4 +1686,103 @@ tr.fila-encabezado td {
   font-size: 0.8rem;
   color: var(--c-text-mute);
   margin-right: 0.25rem;
+}
+
+.tabla-observaciones {
+  max-width: none;
+  width: 100%;
+  table-layout: fixed; // 👈 esto es lo que faltaba
+
+  .input-textarea {
+    width: 650px;
+    max-width: none;
+  }
+
+  .empty-row {
+    width: 650px;
+  }
+
+  th:first-child,
+  td:first-child {
+    width: 85%;
+  }
+
+  th:last-child,
+  td:last-child {
+    width: 15%;
+    text-align: center;
+  }
+}
+
+.tabla-observaciones {
+  &.tabla-colind--sm {
+    max-width: none !important;
+  }
+
+  width: 100% !important;
+  table-layout: fixed !important;
+
+  .input-textarea {
+    width: 900px !important;
+    max-width: none !important;
+  }
+
+  td.empty-row {
+    width: 1200px !important;
+  }
+}
+
+.fotos-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.fotos-panel-item {
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--c-surface);
+
+  &__img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    display: block;
+  }
+
+  &__nombre {
+    font-size: 0.72rem;
+    padding: 0.35rem 0.5rem;
+    color: var(--c-text-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__acciones {
+    display: flex;
+    gap: 0.3rem;
+    padding: 0 0.5rem 0.5rem;
+
+    button {
+      flex: 1;
+      border: 1px solid var(--c-border-md);
+      background: var(--c-bg);
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      cursor: pointer;
+      padding: 0.2rem 0;
+
+      &:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+
+      &:hover:not(:disabled) {
+        background: var(--c-surface);
+      }
+    }
+  }
 }

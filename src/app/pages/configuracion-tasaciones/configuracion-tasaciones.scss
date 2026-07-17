@@ -1,0 +1,525 @@
+$accent: #F59E0B;
+$accent-dk: #D97706;
+$accent-lt: #FEF3C7;
+$blue: #3B82F6;
+$blue-lt: #EFF6FF;
+$green: #10B981;
+$green-lt: #ECFDF5;
+$bg: #F8FAFC;
+$surface: #FFFFFF;
+$border: #E2E8F0;
+$border-md: #CBD5E1;
+$text: #0F172A;
+$text-md: #1E293B;
+$text-soft: #475569;
+$text-mute: #94A3B8;
+$radius: 10px;
+$transition: 0.2s ease;
+
+.config-tas {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 60px);
+  background: $bg;
+
+  &__header {
+    background: #1A2340;
+    padding: 1.5rem 2rem;
+  }
+
+  &__title-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  &__icon {
+    font-size: 2rem;
+  }
+
+  &__title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin: 0;
+    letter-spacing: -0.3px;
+  }
+
+  &__sub {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.55);
+    margin: 0.2rem 0 0;
+    font-weight: 500;
+  }
+
+  &__tabs {
+    display: flex;
+    background: #1A2340;
+    padding: 0 2rem;
+    gap: 4px;
+    border-bottom: 3px solid $accent;
+    flex-wrap: wrap;
+  }
+
+  &__tab {
+    padding: 0.85rem 1.2rem;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: $transition;
+    margin-bottom: -3px;
+    white-space: nowrap;
+
+    &:hover {
+      color: #FFFFFF;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    &--active {
+      color: $accent;
+      border-bottom-color: $accent;
+
+      &:hover {
+        background: transparent;
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px dashed rgba($accent, 0.7);
+      outline-offset: -2px;
+    }
+  }
+
+  &__body {
+    flex: 1;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 860px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+
+  &__footer {
+    padding: 1.25rem 2rem;
+    border-top: 1px solid $border;
+    background: $surface;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  &__saved {
+    margin-right: auto;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: $green;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  &__btn-save {
+    padding: 0.65rem 1.5rem;
+    background: $green;
+    color: white;
+    border: none;
+    border-radius: $radius;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: $transition;
+
+    &:hover {
+      background: darken($green, 8%);
+      transform: translateY(-1px);
+    }
+  }
+
+  &__btn-cancel {
+    padding: 0.65rem 1.5rem;
+    background: transparent;
+    color: $text-soft;
+    border: 1.5px solid $border-md;
+    border-radius: $radius;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: $transition;
+
+    &:hover {
+      background: $bg;
+      border-color: $text-soft;
+    }
+  }
+}
+
+// Tarjeta de sección
+.config-card {
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: $radius;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  animation: fadeTabIn 0.2s ease-out;
+
+  &__head {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    background: #F8FAFC;
+    border-bottom: 1px solid $border;
+  }
+
+  &__icon {
+    font-size: 1.6rem;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    flex-shrink: 0;
+
+    &--amber {
+      background: $accent-lt;
+    }
+
+    &--blue {
+      background: $blue-lt;
+    }
+
+    &--green {
+      background: $green-lt;
+    }
+  }
+
+  &__title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: $text;
+    margin: 0 0 0.2rem;
+  }
+
+  &__desc {
+    font-size: 0.82rem;
+    color: $text-mute;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  &__body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+}
+
+// Grid de campos
+.config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Campo individual
+.config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  &--full {
+    grid-column: 1 / -1;
+  }
+
+  &__label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: $text-mute;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+
+  &__row {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+  }
+
+  &__input {
+    flex: 1;
+    padding: 0.55rem 0.85rem;
+    border: 1.5px solid $border-md;
+    border-radius: 7px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: $text;
+    background: #fff;
+    transition: $transition;
+    outline: none;
+    box-sizing: border-box;
+
+    &::placeholder {
+      color: $text-mute;
+    }
+
+    &:focus {
+      border-color: $accent;
+      box-shadow: 0 0 0 3px rgba($accent, 0.12);
+    }
+
+    &--sm {
+      max-width: 180px;
+    }
+
+    &--readonly {
+      background-color: #f3f4f6 !important; /* Fondo gris opaco */
+      color: $text-soft !important;         /* Texto un poco más suave */
+      border-color: $border !important;     /* Borde más claro */
+      cursor: not-allowed !important;       /* Cursor con signo de prohibido 🚫 */
+      box-shadow: none !important;
+
+      &:focus {
+        border-color: $border !important;   /* Evita que brille al hacer clic */
+        box-shadow: none !important;
+      }
+    }
+  }
+
+  &__btn {
+    padding: 0.55rem 1rem;
+    border: none;
+    border-radius: 7px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: $transition;
+
+    &--test {
+      background: $blue-lt;
+      color: $blue;
+      border: 1.5px solid lighten($blue, 25%);
+
+      &:hover:not(:disabled) {
+        background: $blue;
+        color: white;
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+@keyframes fadeTabIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// --- ESTILOS PARA EL ÁRBOL DE CARPETAS ---
+.folder-tree {
+  background: #1e293b;
+  padding: 1.5rem;
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+
+  &--root {
+    color: #60a5fa;
+    font-weight: bold;
+    margin-bottom: 10px;
+    border-bottom: 1px dashed rgba(255,255,255,0.1);
+  }
+}
+
+.tree-connector {
+  color: #64748b;
+  letter-spacing: -2px;
+}
+
+.tree-input-group {
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  padding-right: 5px;
+
+  .tree-input {
+    background: transparent;
+    border: none;
+    color: #facc15;
+    padding: 4px 8px;
+    outline: none;
+    width: 200px;
+    font-family: monospace;
+
+    &::placeholder { color: #475569; }
+  }
+
+  .btn-remove-level {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    &:hover { background: #b91c1c; }
+  }
+}
+
+.tree-controls {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  .btn-add-level {
+    width: fit-content;
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    &:hover { background: #059669; }
+  }
+}
+
+.variable-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  .badges-hint { font-size: 12px; color: #64748b; font-weight: bold; }
+
+  .badge {
+    background: #e2e8f0;
+    border: 1px solid #cbd5e1;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: monospace;
+    &:hover { background: #cbd5e1; }
+  }
+}
+
+.path-preview {
+  margin-top: 1.5rem;
+  padding: 12px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #92400e;
+
+  &__seg {
+    font-weight: bold;
+    &--var { color: #2563eb; text-decoration: underline; }
+  }
+  &__file { font-style: italic; color: #059669; }
+}
+
+// --- BOTONES DE ACCIÓN DEL TAB CARPETAS ---
+.carpetas-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+
+  &--edit {
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__right {
+    display: flex;
+    gap: 0.75rem;
+  }
+}
+
+.btn-editar {
+  padding: 0.6rem 1.2rem;
+  background: #3B82F6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: 0.2s ease;
+
+  &:hover {
+    background: darken(#3B82F6, 8%);
+    transform: translateY(-1px);
+  }
+}
+
+.btn-restaurar {
+  padding: 0.6rem 1.2rem;
+  background: transparent;
+  color: #475569;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: 0.2s ease;
+
+  &:hover {
+    background: #F8FAFC;
+    border-color: #475569;
+  }
+}
+
+// Label de solo lectura en árbol
+.tree-label--readonly {
+  color: #facc15;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+// Mensaje cuando no hay niveles
+.tree-empty {
+  color: #64748b;
+  font-style: italic;
+  font-size: 0.82rem;
+  padding: 0.5rem 0;
+  font-family: monospace;
+}

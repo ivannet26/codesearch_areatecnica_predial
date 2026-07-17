@@ -18,5 +18,17 @@ export const routes: Routes = [
     path: 'cad',
     loadComponent: () => import('./pages/datos-cad/datos-cad').then(m => m.DatosCadComponent)
   },
+  {
+    path: 'tasaciones',
+    loadComponent: () => import('./pages/padron-tasaciones/padron-tasaciones').then(m => m.PadronTasacionesComponent)
+  },
+  {
+    path: 'configuracion',
+    loadComponent: () => import('./pages/datos-cad/datos-cad').then(m => m.DatosCadComponent) // tu configuración original
+  },
+  {
+    path: 'configuracion-tasaciones',
+    loadComponent: () => import('./pages/configuracion-tasaciones/configuracion-tasaciones').then(m => m.ConfiguracionTasacionesComponent)
+  },
   { path: '**', redirectTo: 'home' }
 ];

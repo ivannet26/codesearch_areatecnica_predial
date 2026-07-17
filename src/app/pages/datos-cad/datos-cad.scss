@@ -87,6 +87,7 @@
       background-color: #edffeb;
       border-color: #acfd8a;
     }
+
     &.config-card--highlight-yellow {
       background-color: #fffbeb;
       border-color: #fde68a;
@@ -444,240 +445,240 @@
 }
 
 /* ─── ESTRUCTURA DINÁMICA DE CARPETAS (ÁRBOL) ─── */
-  .folder-tree {
-    background: #0f172a; // Un fondo oscuro tipo terminal/código resalta genial este árbol
-    border-radius: 8px;
-    padding: 1.2rem;
-    margin: 1rem 0;
-    font-family: 'Fira Code', 'Courier New', Courier, monospace;
+.folder-tree {
+  background: #0f172a; // Un fondo oscuro tipo terminal/código resalta genial este árbol
+  border-radius: 8px;
+  padding: 1.2rem;
+  margin: 1rem 0;
+  font-family: 'Fira Code', 'Courier New', Courier, monospace;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
+
+  .tree-row {
     display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
+    align-items: center;
+    min-height: 32px;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 
-    .tree-row {
-      display: flex;
-      align-items: center;
-      min-height: 32px;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-
-      &--root {
-        border-bottom: 1px dashed #334155;
-        padding-bottom: 0.4rem;
-        margin-bottom: 0.4rem;
-      }
-    }
-
-    .tree-connector {
-      color: #475569;
-      font-weight: bold;
-      letter-spacing: 1px;
-      user-select: none;
-
-      &--file {
-        margin-left: 1.5rem; // Sangría extra para el archivo final
-      }
-    }
-
-    .tree-icon {
-      font-size: 1.1rem;
-      user-select: none;
-    }
-
-    .tree-label {
-      color: #94a3b8;
-      font-size: 0.9rem;
-
-      &--root {
-        color: #38bdf8;
-        font-weight: 600;
-      }
-
-      &--variable {
-        color: #34d399; // Verde brillante para identificar variables de un vistazo
-        background: rgba(52, 211, 153, 0.1);
-        padding: 0.1rem 0.4rem;
-        border-radius: 4px;
-        border: 1px dashed rgba(52, 211, 153, 0.3);
-        font-weight: 600;
-      }
-
-      &--file {
-        color: #fca5a5;
-        font-style: italic;
-      }
-    }
-
-    .tree-input-group {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-
-      .tree-input {
-        background: #1e293b;
-        border: 1px solid #475569;
-        color: #f8fafc;
-        padding: 0.3rem 0.6rem;
-        border-radius: 4px;
-        font-size: 0.85rem;
-        font-family: monospace;
-        width: 220px;
-        transition: all 0.2s;
-
-        &:focus {
-          border-color: #3b82f6;
-          background: #0f172a;
-          outline: none;
-          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-        }
-      }
-
-      .btn-remove-level {
-        background: rgba(239, 68, 68, 0.2);
-        color: #f87171;
-        border: 1px solid rgba(239, 68, 68, 0.4);
-        border-radius: 4px;
-        width: 24px;
-        height: 24px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.75rem;
-        transition: all 0.2s;
-
-        &:hover {
-          background: #ef4444;
-          color: white;
-        }
-      }
-    }
-
-    .tree-file-row {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      width: 100%;
-      margin-top: 0.25rem;
-    }
-
-    .tree-empty {
-      color: #64748b;
-      font-size: 0.85rem;
-      font-style: italic;
-      padding: 0.5rem 0;
+    &--root {
+      border-bottom: 1px dashed #334155;
+      padding-bottom: 0.4rem;
+      margin-bottom: 0.4rem;
     }
   }
 
-  /* Controles del Constructor (Botón + Badges) */
-  .tree-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    margin-top: 1rem;
-    flex-wrap: wrap;
+  .tree-connector {
+    color: #475569;
+    font-weight: bold;
+    letter-spacing: 1px;
+    user-select: none;
 
-    .btn-add-level {
-      background-color: #10b981;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
+    &--file {
+      margin-left: 1.5rem; // Sangría extra para el archivo final
+    }
+  }
+
+  .tree-icon {
+    font-size: 1.1rem;
+    user-select: none;
+  }
+
+  .tree-label {
+    color: #94a3b8;
+    font-size: 0.9rem;
+
+    &--root {
+      color: #38bdf8;
       font-weight: 600;
+    }
+
+    &--variable {
+      color: #34d399; // Verde brillante para identificar variables de un vistazo
+      background: rgba(52, 211, 153, 0.1);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      border: 1px dashed rgba(52, 211, 153, 0.3);
+      font-weight: 600;
+    }
+
+    &--file {
+      color: #fca5a5;
+      font-style: italic;
+    }
+  }
+
+  .tree-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .tree-input {
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
       font-size: 0.85rem;
+      font-family: monospace;
+      width: 220px;
+      transition: all 0.2s;
+
+      &:focus {
+        border-color: #3b82f6;
+        background: #0f172a;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+      }
+    }
+
+    .btn-remove-level {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      border-radius: 4px;
+      width: 24px;
+      height: 24px;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 0.3rem;
-      transition: background 0.2s;
+      justify-content: center;
+      font-size: 0.75rem;
+      transition: all 0.2s;
 
       &:hover {
-        background-color: #059669;
-      }
-    }
-
-    .variable-badges {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      flex-wrap: wrap;
-
-      &__hint {
-        font-size: 0.8rem;
-        color: #64748b;
-        font-weight: 500;
-      }
-
-      .badge {
-        background: #f1f5f9;
-        border: 1px solid #cbd5e1;
-        color: #334155;
-        padding: 0.25rem 0.6rem;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        font-family: monospace;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-
-        &:hover {
-          background: #e2e8f0;
-          color: #0f172a;
-          border-color: #94a3b8;
-        }
+        background: #ef4444;
+        color: white;
       }
     }
   }
 
-  /* Vista previa de la ruta de archivo real */
-  .path-preview {
-    margin-top: 1.5rem;
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    padding: 0.8rem 1rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    color: #166534;
+  .tree-file-row {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 0.2rem;
-    line-height: 1.4;
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 0.25rem;
+  }
 
-    &__label {
-      font-weight: 700;
-      margin-right: 0.5rem;
-      color: #14532d;
-    }
+  .tree-empty {
+    color: #64748b;
+    font-size: 0.85rem;
+    font-style: italic;
+    padding: 0.5rem 0;
+  }
+}
 
-    &__seg {
-      font-family: monospace;
-      background: #dcfce7;
-      padding: 0.1rem 0.4rem;
-      border-radius: 4px;
+/* Controles del Constructor (Botón + Badges) */
+.tree-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
 
-      &--variable {
-        background: #34d399;
-        color: #064e3b;
-        font-weight: bold;
-      }
-    }
+  .btn-add-level {
+    background-color: #10b981;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: background 0.2s;
 
-    &__sep {
-      color: #86efac;
-      font-weight: bold;
-      font-family: monospace;
-      padding: 0 0.1rem;
-    }
-
-    &__file {
-      font-family: monospace;
-      font-weight: 600;
-      color: #b91c1c;
+    &:hover {
+      background-color: #059669;
     }
   }
+
+  .variable-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+
+    &__hint {
+      font-size: 0.8rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .badge {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-family: monospace;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+        border-color: #94a3b8;
+      }
+    }
+  }
+}
+
+/* Vista previa de la ruta de archivo real */
+.path-preview {
+  margin-top: 1.5rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #166534;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  line-height: 1.4;
+
+  &__label {
+    font-weight: 700;
+    margin-right: 0.5rem;
+    color: #14532d;
+  }
+
+  &__seg {
+    font-family: monospace;
+    background: #dcfce7;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+
+    &--variable {
+      background: #34d399;
+      color: #064e3b;
+      font-weight: bold;
+    }
+  }
+
+  &__sep {
+    color: #86efac;
+    font-weight: bold;
+    font-family: monospace;
+    padding: 0 0.1rem;
+  }
+
+  &__file {
+    font-family: monospace;
+    font-weight: 600;
+    color: #b91c1c;
+  }
+}
 
 /* ─── RESPONSIVE ─── */
 @media (max-width: 768px) {
@@ -711,21 +712,111 @@
     flex-direction: column;
     align-items: flex-start !important;
     gap: 0.2rem;
-    
+
     .tree-connector {
       display: none; // Ocultamos los conectores en móviles muy pequeños para ahorrar espacio
     }
-    
+
     .tree-input-group {
       width: 100%;
+
       .tree-input {
         width: 100% !important; // El input toma todo el ancho disponible
       }
     }
   }
-  
+
   .tree-controls {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+// ── TABS ──
+.config-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 2.5rem;
+  background: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.config-tab {
+  padding: 0.75rem 1.2rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: -2px;
+  white-space: nowrap;
+
+  &:hover {
+    color: #1e293b;
+    background: #f1f5f9;
+  }
+
+  &--active {
+    color: #f59e0b;
+    border-bottom-color: #f59e0b;
+    background: transparent;
+  }
+}
+
+.tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  animation: fadeTabIn 0.2s ease-out;
+}
+
+@keyframes fadeTabIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sheets-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1rem;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sheet-group-box {
+  border: 1px solid #e0e0e0;
+  padding: 1rem;
+  border-radius: 8px;
+  background: white;
+
+  h4 {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1e293b;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    display: block;
+    margin-bottom: 0.3rem;
   }
 }

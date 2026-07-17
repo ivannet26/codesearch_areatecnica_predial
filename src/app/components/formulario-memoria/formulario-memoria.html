@@ -1105,7 +1105,7 @@
       }
 
       @if(isEditing || esVisible('blk_8_1_2', true)) {
-      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_8_1_2', true)">
+      <div [class.is-hidden-edit]="isEditing && !esVisible('blk_8_1_2', true)" style="margin-top: 1rem;">
         <label class="toggle-section-card" [class.is-active]="memoria.afectaForestales">
           <div class="toggle-section-card__text">
             <div class="title">8.1.2 Plantaciones Permanentes: Forestales @if(isEditing){<button type="button"
@@ -1360,30 +1360,38 @@
         @if(isEditing){<button type="button" class="btn-vis"
           (click)="toggleVisibilidad('tit_sec11', true)">{{getIcono('tit_sec11', true)}}</button>}
       </div>
-      <table class="tabla-colind tabla-colind--sm" [class.is-hidden-edit]="isEditing && !esVisible('tit_sec11', true)">
-        <thead>
-          <tr>
-            <th>DESCRIPCIÓN</th>
-            <th>PRESENTA</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="td-orange">1. FICHA RENIEC</td>
-            <td><select class="input-full" [disabled]="!isEditing">
-                <option value="SÍ">SÍ</option>
-                <option value="NO">NO</option>
-              </select></td>
-          </tr>
-          <tr>
-            <td class="td-orange">2. PARTIDA REGISTRAL N° {{ memoria.partidaRegistral || '---' }}</td>
-            <td><select class="input-full" [disabled]="!isEditing">
-                <option value="SÍ">SÍ</option>
-                <option value="NO">NO</option>
-              </select></td>
-          </tr>
-        </tbody>
-      </table>
+
+      <div [class.is-hidden-edit]="isEditing && !esVisible('tit_sec11', true)">
+        @if (isEditing) {
+        <div class="actions-coord" style="margin-bottom: 1rem;">
+          <button class="btn btn--outline btn--add" (click)="agregarDocumentoAdjunto()">+ Agregar Documento</button>
+        </div>
+        }
+        <table class="tabla-colind tabla-colind--sm">
+          <thead>
+            <tr>
+              <th>DESCRIPCIÓN</th>
+              @if (isEditing) { <th>ACCIÓN</th> }
+            </tr>
+          </thead>
+          <tbody>
+            @for (doc of memoria.documentosAdjuntos; track $index; let i = $index) {
+            <tr>
+              <td class="td-orange">
+                <input [(ngModel)]="memoria.documentosAdjuntos![i]" class="input-full" [readonly]="!isEditing"
+                  placeholder="FICHA RENIEC / PARTIDA REGISTRAL / ..." />
+              </td>
+              @if (isEditing) { <td><button (click)="eliminarDocumentoAdjunto(i)" class="btn-delete">✖</button></td> }
+            </tr>
+            }
+            @if (!memoria.documentosAdjuntos || memoria.documentosAdjuntos.length === 0) {
+            <tr>
+              <td [attr.colspan]="isEditing ? 2 : 1" class="empty-row">Sin documentos adjuntos registrados.</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
       }
     </div>
     }
@@ -1396,15 +1404,77 @@
         @if(isEditing){<button type="button" class="btn-vis"
           (click)="toggleVisibilidad('tit_sec12', true)">{{getIcono('tit_sec12', true)}}</button>}
       </div>
+
       <div [class.is-hidden-edit]="isEditing && !esVisible('tit_sec12', true)">
-        @for (obs of memoria.observaciones; track $index; let i = $index) {
-        <div class="campo campo--full" style="margin-bottom:1.5rem">
-          <textarea [(ngModel)]="memoria.observaciones[i]" [readonly]="!isEditing" rows="6"
-            class="input-textarea input-textarea--expandida"
-            [style.min-height]="calcularAlturaTextarea(memoria.observaciones[i])"></textarea>
+        @if (isEditing) {
+        <div class="actions-coord" style="margin-bottom: 1rem;">
+          <button class="btn btn--outline btn--add" (click)="agregarObservacion()">+ Agregar Observación</button>
         </div>
         }
-        @if (memoria.observaciones.length === 0) { <p class="empty-row">Sin observaciones.</p> }
+        <table class="tabla-colind tabla-colind--sm tabla-observaciones">
+          <thead>
+            <tr>
+              <th>OBSERVACIÓN</th>
+              @if (isEditing) { <th>ACCIÓN</th> }
+            </tr>
+          </thead>
+          <tbody>
+            @for (obs of memoria.observaciones; track $index; let i = $index) {
+            <tr>
+              <td class="td-orange">
+                <textarea [(ngModel)]="memoria.observaciones![i]" [readonly]="!isEditing" rows="3"
+                  class="input-textarea" style="width:100%; border:none; background:transparent; resize:vertical;"
+                  placeholder="EL PREDIO SE ENCUENTRA INSCRITO EN LA PARTIDA REGISTRAL..."></textarea>
+              </td>
+              @if (isEditing) { <td><button (click)="eliminarObservacion(i)" class="btn-delete">✖</button></td> }
+            </tr>
+            }
+            @if (!memoria.observaciones || memoria.observaciones.length === 0) {
+            <tr>
+              <td [attr.colspan]="isEditing ? 2 : 1" class="empty-row">Sin observaciones registradas.</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+    </div>
+    }
+
+    @if (seccionActiva === 13) {
+    <div class="seccion">
+      <div class="seccion__titulo">
+        13. PANEL FOTOGRÁFICO (DE LOS ELEMENTOS A VALORIZAR)
+      </div>
+      <p class="obra-description-text" style="margin-top:0;">
+        ESTAS IMÁGENES SE INSERTARÁN EN LA SECCIÓN "13. PANEL FOTOGRÁFICO" DEL EXCEL GENERADO
+      </p>
+
+      <input type="file" accept="image/png" multiple #inputFotosPanel (change)="onSeleccionArchivosPanel($event)"
+        style="display:none" />
+      <button type="button" class="btn btn--outline btn--add" (click)="inputFotosPanel.click()">
+        ➕ Agregar fotografías (solo PNG)
+      </button>
+
+      @if (anexosDePanel().length > 0) {
+      <div class="fotos-panel-grid">
+        @for (a of anexosDePanel(); track a.id; let i = $index) {
+        <div class="fotos-panel-item">
+          <img [src]="'data:' + a.mimeType + ';base64,' + a.base64" class="fotos-panel-item__img" />
+          <div class="fotos-panel-item__nombre" [title]="a.nombre">{{ i + 1 }}. {{ a.nombre }}</div>
+          <div class="fotos-panel-item__acciones">
+            <button type="button" (click)="moverImagenPanel(a.id, -1)" [disabled]="i === 0">↑</button>
+            <button type="button" (click)="moverImagenPanel(a.id, 1)"
+              [disabled]="i === anexosDePanel().length - 1">↓</button>
+            <button type="button" (click)="eliminarImagenPanel(a.id)">✖</button>
+          </div>
+        </div>
+        }
+      </div>
+      } @else {
+      <div class="empty-state-box">
+        <span style="font-size:1.5rem;">📷</span>
+        <p>Sin fotografías registradas.</p>
       </div>
       }
     </div>

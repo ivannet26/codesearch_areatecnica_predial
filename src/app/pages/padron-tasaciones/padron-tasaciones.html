@@ -1,0 +1,597 @@
+<div class="memorias">
+  <!-- TABS -->
+  <div class="memorias__tabs">
+    <button class="memorias__tab" [class.memorias__tab--active]="vistaActiva() === 'tabla'"
+      (click)="vistaActiva.set('tabla')">
+      ⊞ Padrón de Tasaciones
+    </button>
+    <button class="memorias__tab" [class.memorias__tab--active]="vistaActiva() === 'formulario'"
+      (click)="vistaActiva.set('formulario')">
+      📋 Ficha de Tasación
+    </button>
+  </div>
+
+  <div class="memorias__content">
+
+    <!-- ══════════════════ VISTA: TABLA ══════════════════ -->
+    @if (vistaActiva() === 'tabla') {
+
+    <div class="tabla-header">
+      <div class="header-actions">
+        <input type="text" placeholder="Buscar código, nombre, distrito..." [ngModel]="busqueda()"
+          (ngModelChange)="busqueda.set($event)" class="search-input" />
+        @if (!loading()) {
+        <span class="result-count">{{ filtrados().length }} predios</span>
+        }
+        <button class="btn-visor" [disabled]="!seleccionado()" (click)="verFicha(seleccionado()!)">
+          📋 Ver Ficha
+        </button>
+
+        <button class="btn-refresh" (click)="cargarDesdeNube()" [disabled]="loading()">
+          {{ loading() ? 'Sincronizando...' : 'Actualizar desde la Nube' }}
+        </button>
+      </div>
+    </div>
+
+    @if (error()) {
+    <div class="error-banner">⚠️ {{ error() }}</div>
+    }
+
+    @if (loading()) {
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Leyendo PADRÓN, ESTUDIO DE MERCADO y DATOS...</p>
+    </div>
+    } @else {
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>N°</th>
+            <th>Código</th>
+            <th>Nombre / Propietario</th>
+            <th>DNI/RUC</th>
+            <th>Distrito</th>
+            <th>Tipo Predio</th>
+            <th>Área Total (m²)</th>
+            <th>Área Afectada (m²)</th>
+            <th>S/. x m²</th>
+            <th>Valor Terreno (VT)</th>
+            <th>Módulos VIV</th>
+            <th>Obras OC</th>
+            <th>Plantaciones</th>
+            <th>VP (S/.)</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of filtrados(); track $index) {
+          <tr (click)="seleccionar(e)" (dblclick)="verFicha(e)" [class.selected]="seleccionado() === e"
+            title="Doble clic para ver la ficha completa">
+            <td>{{ e._padron.n }}</td>
+            <td><strong>{{ e.codigo }}</strong></td>
+            <td [title]="tituloPropietarios(e)">
+              {{ e.propietario }}
+              @if (hayVariosPropietarios(e)) {
+              <span class="badge-mas">+{{ e.propietarios.length - 1 }}</span>
+              }
+            </td>
+            <td>{{ e.dni }}</td>
+            <td>{{ e.ubicacion.distrito }}</td>
+            <td>{{ e.predio.tipo }}</td>
+            <td class="num">{{ fmt(e._padron.areaTotalM2) }}</td>
+            <td class="num">{{ fmt(e._padron.areaAfectadaM2) }}</td>
+            <td class="num">{{ fmt(e._padron.valorM2EstudioMercado) }}</td>
+            <td class="num strong">S/ {{ fmt(e._padron.valorTerrenoVT) }}</td>
+            <td class="center">{{ e._padron.modulosViviendaEM.length || '-' }}</td>
+            <td class="center">{{ e._padron.obrasComplementariasEM.length || '-' }}</td>
+            <td class="center">{{ e.plantaciones.length || '-' }}</td>
+            <td class="num">{{ e._padron.valorPlantacionesVP ? ('S/ ' + fmt(e._padron.valorPlantacionesVP)) : '-' }}
+            </td>
+          </tr>
+          }
+          @if (filtrados().length === 0 && !loading()) {
+          <tr>
+            <td colspan="14" class="empty-row">
+              @if (cargado()) {
+              No se encontraron resultados para "{{ busqueda() }}"
+              } @else {
+              Presiona "Actualizar desde la Nube" para cargar el padrón.
+              }
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+    }
+
+    <!-- ══════════════════ VISTA: FICHA DE TASACIÓN ══════════════════ -->
+    @if (vistaActiva() === 'formulario') {
+
+    @if (!seleccionado()) {
+    <div class="padron-tas__placeholder">
+      <div class="padron-tas__icon">📋</div>
+      <h2 class="padron-tas__title">Ficha de Tasación</h2>
+      <p class="padron-tas__desc">
+        Selecciona un predio del padrón y haz doble clic (o usa "Ver Ficha")
+        para revisar todos sus datos antes de generar el reporte.
+      </p>
+      <button class="padron-tas__btn-back" (click)="vistaActiva.set('tabla')">
+        ← Volver al Padrón
+      </button>
+    </div>
+
+    } @else {
+    <div class="ficha-wrapper">
+
+      <!-- HEADER DE LA FICHA -->
+      <div class="ficha-header">
+        <div class="ficha-header__left">
+          <button class="btn-back" (click)="vistaActiva.set('tabla')">← Padrón</button>
+          <div>
+            <h2 class="ficha-header__codigo">{{ seleccionado()!.codigo }}</h2>
+            <p class="ficha-header__nombre">{{ resumenPropietario(seleccionado()!) }}</p>
+          </div>
+        </div>
+        <div class="ficha-header__right">
+          <span class="badge" [class.badge--si]="hayVivienda(seleccionado()!)">
+            🏠 Vivienda
+          </span>
+          <span class="badge" [class.badge--si]="hayOC(seleccionado()!)">
+            🧱 Obras Compl.
+          </span>
+          <span class="badge" [class.badge--si]="hayPlantaciones(seleccionado()!)">
+            🌱 Plantaciones
+          </span>
+          <button class="btn-reporte" (click)="generarReporte(seleccionado())" [disabled]="loading()">
+            📄 Generar Reporte DMD
+          </button>
+        </div>
+      </div>
+
+      <div class="ficha-body">
+
+        <!-- ── SECCIÓN: DATOS DEL PROPIETARIO ── -->
+        <div class="ficha-seccion">
+          <h3 class="ficha-seccion__titulo">
+            👤 Datos del Propietario
+            @if (hayVariosPropietarios(seleccionado()!)) {
+            <span class="titulo-contador">({{ seleccionado()!.propietarios.length }} copropietarios)</span>
+            }
+          </h3>
+
+          @if (hayVariosPropietarios(seleccionado()!)) {
+          <!-- Varios copropietarios: se listan TODOS en una tabla -->
+          <div class="ficha-tabla-mini copropietarios-tabla">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nombre / Apellidos</th>
+                  <th>DNI</th>
+                  <th>Estado Civil</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of seleccionado()!.propietarios; track $index) {
+                <tr>
+                  <td class="center">{{ $index + 1 }}</td>
+                  <td>{{ p.nombre || '-' }}</td>
+                  <td>{{ p.dni || '-' }}</td>
+                  <td>{{ p.estado_civil || '-' }}</td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          } @else {
+          <!-- Un solo propietario: campos simples, como antes -->
+          <div class="ficha-grid">
+            <div class="ficha-campo">
+              <label>Nombre / Apellidos</label>
+              <span>{{ seleccionado()!.propietario || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>DNI / RUC</label>
+              <span>{{ seleccionado()!.dni || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Estado Civil</label>
+              <span>{{ seleccionado()!.estado_civil || '-' }}</span>
+            </div>
+          </div>
+          }
+
+          <div class="ficha-grid">
+            <div class="ficha-campo">
+              <label>Condición Jurídica</label>
+              <span>{{ seleccionado()!.predio.condicion_juridica || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Entidad Solicitante</label>
+              <span>{{ seleccionado()!.predio.entidad || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Partida Electrónica</label>
+              <span>{{ seleccionado()!.predio.partida_electronica || 'NO INSCRITO' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SECCIÓN: UBICACIÓN ── -->
+        <div class="ficha-seccion">
+          <h3 class="ficha-seccion__titulo">📍 Ubicación y Localización</h3>
+          <div class="ficha-grid">
+            <div class="ficha-campo">
+              <label>Sector / Denominación</label>
+              <span>{{ seleccionado()!.ubicacion.sector || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Distrito</label>
+              <span>{{ seleccionado()!.ubicacion.distrito || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Provincia</label>
+              <span>{{ seleccionado()!.ubicacion.provincia || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Departamento</label>
+              <span>{{ seleccionado()!.ubicacion.departamento || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Topografía</label>
+              <span>{{ seleccionado()!.ubicacion.topografia || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Clima</label>
+              <span>{{ seleccionado()!.ubicacion.clima || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Abastecimiento de Agua</label>
+              <span>{{ seleccionado()!.ubicacion.abastecimiento_agua || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Ruta Vial</label>
+              <span>{{ seleccionado()!.predio.ruta || '-' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SECCIÓN: DESCRIPCIÓN DEL PREDIO ── -->
+        <div class="ficha-seccion">
+          <h3 class="ficha-seccion__titulo">🗺 Descripción del Predio</h3>
+          <div class="ficha-grid">
+            <div class="ficha-campo">
+              <label>Unidad Catastral</label>
+              <span>{{ seleccionado()!.predio.unidad_catastral || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Progresiva Inicio</label>
+              <span>{{ seleccionado()!.predio.p_inicio || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Progresiva Final</label>
+              <span>{{ seleccionado()!.predio.p_final || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Lado</label>
+              <span>{{ seleccionado()!.predio.lado || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Tipo de Predio</label>
+              <span>{{ seleccionado()!.predio.tipo || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Uso Actual</label>
+              <span>{{ seleccionado()!.predio.uso_actual || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Tipo Afectación</label>
+              <span>{{ seleccionado()!.predio.tipo_afectacion || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Zonificación</label>
+              <span>{{ seleccionado()!.predio.zonificacion || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Daño Emergente</label>
+              <span [class.badge--si]="seleccionado()!.predio.dano_emergente === 'SI'"
+                [class.badge--no]="seleccionado()!.predio.dano_emergente === 'NO'" class="badge-inline">
+                {{ seleccionado()!.predio.dano_emergente || '-' }}
+              </span>
+            </div>
+            <div class="ficha-campo">
+              <label>Lucro Cesante</label>
+              <span [class.badge--si]="seleccionado()!.predio.lucro_cesante === 'SI'"
+                [class.badge--no]="seleccionado()!.predio.lucro_cesante === 'NO'" class="badge-inline">
+                {{ seleccionado()!.predio.lucro_cesante || '-' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SECCIÓN: ÁREAS Y VALORACIÓN TERRENO ── -->
+        <div class="ficha-seccion">
+          <h3 class="ficha-seccion__titulo">📐 Áreas y Valoración del Terreno</h3>
+          <div class="ficha-grid">
+            <div class="ficha-campo">
+              <label>Área Total (m²)</label>
+              <span class="num">{{ fmt(seleccionado()!.areas.area_terreno) }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Área Afectada (m²)</label>
+              <span class="num">{{ fmt(seleccionado()!.areas.area_afectado) }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>VUT (S/. x m²)</label>
+              <span class="num">{{ fmt(seleccionado()!.valoracion_terreno.VUT_cantidad) }}</span>
+            </div>
+            <div class="ficha-campo ficha-campo--highlight">
+              <label>Valor Terreno VT (S/.)</label>
+              <span class="num strong">S/ {{ fmt(seleccionado()!._padron.valorTerrenoVT) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SECCIÓN: EDIFICACIÓN / VIVIENDA ── -->
+        @if (hayVivienda(seleccionado()!)) {
+        <div class="ficha-seccion">
+          <h3 class="ficha-seccion__titulo">🏠 Edificación</h3>
+          <div class="ficha-grid">
+            <div class="ficha-campo">
+              <label>Módulo</label>
+              <span>{{ seleccionado()!.vivienda.modulo || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Niveles</label>
+              <span>{{ seleccionado()!.vivienda.niveles || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Antigüedad</label>
+              <span>{{ seleccionado()!.vivienda.antiguedad || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Material Predominante</label>
+              <span>{{ seleccionado()!.vivienda.material_predominante || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Estado de Conservación</label>
+              <span>{{ seleccionado()!.vivienda.estado_conservacion || '-' }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Área Techada Directa (m²)</label>
+              <span class="num">{{ fmtOpt(seleccionado()!.vivienda.area_techada_directa) }}</span>
+            </div>
+            <div class="ficha-campo">
+              <label>Área Total (m²)</label>
+              <span class="num">{{ fmtOpt(seleccionado()!.vivienda.area_total) }}</span>
+            </div>
+          </div>
+          <div class="ficha-campo ficha-campo--full">
+            <label>Muros y Columnas</label>
+            <span class="ficha-texto-largo">{{ seleccionado()!.vivienda.cc_muros_columnas || '-' }}</span>
+          </div>
+          <!-- Módulos VIV de Estudio de Mercado -->
+          @if (seleccionado()!._padron.modulosViviendaEM.length > 0) {
+          <div class="ficha-tabla-mini">
+            <table>
+              <thead>
+                <tr>
+                  <th>Código VIV</th>
+                  <th>Descripción</th>
+                  <th>Etiqueta</th>
+                  <th>Área (m²)</th>
+                  <th>VU (S/.)</th>
+                  <th>F.D.</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (m of seleccionado()!._padron.modulosViviendaEM; track m.codigoViv) {
+                <tr>
+                  <td>{{ m.codigoViv }}</td>
+                  <td>{{ m.descripcion }}</td>
+                  <td class="center">{{ m.etiquetaLado }}</td>
+                  <td class="num">{{ fmt(m.area) }}</td>
+                  <td class="num">{{ fmt(m.valorUnitario) }}</td>
+                  <td class="num">{{ fmt(m.factorDepreciacion) }}</td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          }
+        </div>
+        }
+
+        <!-- ── SECCIÓN: OBRAS COMPLEMENTARIAS ── -->
+        @if (hayOC(seleccionado()!)) {
+        <div class="ficha-seccion">
+          <h3 class="ficha-seccion__titulo">🧱 Obras Complementarias</h3>
+          @for (oc of seleccionado()!.obras_complementarias; track $index) {
+          @if (oc.descripcionSimple || oc.descripcionDetallada) {
+          <div class="oc-item">
+            <div class="oc-item__header">
+              <strong>{{ oc.codigoOC || ('OC ' + ($index + 1)) }}</strong>
+              <span class="oc-item__desc">{{ oc.descripcionSimple }}</span>
+            </div>
+            <div class="ficha-grid ficha-grid--compact">
+              <div class="ficha-campo">
+                <label>Metrado</label>
+                <span class="num">{{ fmtOpt(oc.metrado) }}</span>
+              </div>
+              <div class="ficha-campo">
+                <label>Unidad</label>
+                <span>{{ oc.unidad || '-' }}</span>
+              </div>
+              <div class="ficha-campo">
+                <label>H (m)</label>
+                <span class="num">{{ fmtOpt(oc.h) }}</span>
+              </div>
+              <div class="ficha-campo">
+                <label>Long. (m)</label>
+                <span class="num">{{ fmtOpt(oc.longitud) }}</span>
+              </div>
+              <div class="ficha-campo">
+                <label>Material</label>
+                <span>{{ oc.materialPredominante || '-' }}</span>
+              </div>
+              <div class="ficha-campo">
+                <label>Estado</label>
+                <span>{{ oc.estadoConservacion || '-' }}</span>
+              </div>
+            </div>
+            @if (oc.descripcionDetallada) {
+            <p class="oc-item__detalle">{{ oc.descripcionDetallada }}</p>
+            }
+          </div>
+          }
+          }
+          <!-- OC de Estudio de Mercado (con VU) -->
+          @if (seleccionado()!._padron.obrasComplementariasEM.length > 0) {
+          <div class="ficha-tabla-mini">
+            <p class="ficha-tabla-mini__label">Valoración OC (Estudio de Mercado)</p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Código OC</th>
+                  <th>Descripción</th>
+                  <th>Metrado</th>
+                  <th>VU (S/.)</th>
+                  <th>F.D.</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (oc of seleccionado()!._padron.obrasComplementariasEM; track oc.codigoOC) {
+                <tr>
+                  <td>{{ oc.codigoOC }}</td>
+                  <td>{{ oc.descripcionDetallada }}</td>
+                  <td class="num">{{ fmt(oc.metrado) }}</td>
+                  <td class="num">{{ fmt(oc.valorUnitario) }}</td>
+                  <td class="num">{{ fmt(oc.factorDepreciacion) }}</td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          }
+        </div>
+        }
+
+        <!-- ── SECCIÓN: PLANTACIONES ── -->
+        @if (hayPlantaciones(seleccionado()!)) {
+        <div class="ficha-seccion">
+          <h3 class="ficha-seccion__titulo">🌱 Plantaciones Afectadas</h3>
+          <div class="ficha-tabla-mini">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre Común</th>
+                  <th>Nombre Científico</th>
+                  <th>Tipo</th>
+                  <th>Edad</th>
+                  <th>N° Plantas</th>
+                  <th>Altura</th>
+                  <th>Diámetro</th>
+                  <th>Área (m²)</th>
+                  <th>VU</th>
+                  <th>Parcial S/.</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of seleccionado()!.plantaciones; track $index) {
+                <tr>
+                  <td>{{ p.nombreComun }}</td>
+                  <td><em>{{ p.nombreCientifico }}</em></td>
+                  <td>{{ p.tipo }}</td>
+                  <td>{{ p.edad || '-' }}</td>
+                  <td class="center">{{ p.nPlantas ?? '-' }}</td>
+                  <td class="num">{{ fmtOpt(p.altura) }}</td>
+                  <td class="num">{{ fmtOpt(p.diametro) }}</td>
+                  <td class="num">{{ fmtOpt(p.area) }}</td>
+                  <td class="num">{{ fmtOpt(p.VU) }}</td>
+                  <td class="num">{{ p.parcial > 0 ? ('S/ ' + fmt(p.parcial)) : '-' }}</td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        }
+
+
+        <!-- ── ANEXOS FOTOGRÁFICOS ── -->
+        <div class="ficha-seccion">
+          <h3 class="ficha-seccion__titulo">
+            📷 Anexos Fotográficos
+            @if (anexos().length > 0) {
+            <span class="titulo-contador">({{ anexos().length }} imagen{{ anexos().length === 1 ? '' : 'es' }})</span>
+            }
+          </h3>
+
+          <input type="file" accept="image/png" multiple #inputAnexos (change)="onSeleccionArchivos($event)"
+            style="display:none" />
+          <button class="btn-visor" type="button" (click)="inputAnexos.click()">➕ Agregar imágenes (solo PNG)</button>
+
+          @if (anexos().length > 0) {
+          <div class="anexos-grid">
+            @for (a of anexos(); track a.id; let i = $index) {
+            <div class="anexo-item">
+              <img [src]="'data:' + a.mimeType + ';base64,' + a.base64" class="anexo-item__img" />
+              <div class="anexo-item__nombre" [title]="a.nombre">{{ i + 1 }}. {{ a.nombre }}</div>
+              <div class="anexo-item__acciones">
+                <button type="button" (click)="moverImagen(a.id, -1)" [disabled]="i === 0">↑</button>
+                <button type="button" (click)="moverImagen(a.id, 1)" [disabled]="i === anexos().length - 1">↓</button>
+                <button type="button" (click)="eliminarImagen(a.id)">✕</button>
+              </div>
+            </div>
+            }
+          </div>
+          } @else {
+          <p class="ficha-texto-largo">Aún no se agregaron imágenes para este expediente.</p>
+          }
+        </div>
+
+        <!-- ── RESUMEN DE VALORACIÓN ── -->
+        <div class="ficha-seccion ficha-seccion--resumen">
+          <h3 class="ficha-seccion__titulo">💰 Resumen de Valoración</h3>
+          <div class="resumen-grid">
+            <div class="resumen-item">
+              <label>VT — Valor Terreno</label>
+              <span>S/ {{ fmt(seleccionado()!._padron.valorTerrenoVT) }}</span>
+            </div>
+            <div class="resumen-item">
+              <label>VP — Valor Plantaciones</label>
+              <span>{{ seleccionado()!._padron.valorPlantacionesVP > 0 ? ('S/ ' +
+                fmt(seleccionado()!._padron.valorPlantacionesVP)) : 'S/ 0.00' }}</span>
+            </div>
+            <div class="resumen-item resumen-item--total">
+              <label>VDT estimado (+20%)</label>
+              <span>S/ {{ fmt((seleccionado()!._padron.valorTerrenoVT + seleccionado()!._padron.valorPlantacionesVP) *
+                1.2) }}</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    }
+    }
+
+  </div>
+</div>
+
+@if (toast()) {
+<div class="mem-toast mem-toast--{{toast()?.tipo}}">
+  <div class="mem-toast__icon">
+    @if (toast()?.tipo === 'success') { ✅ }
+    @if (toast()?.tipo === 'error') { ❌ }
+    @if (toast()?.tipo === 'warning') { ⚠️ }
+  </div>
+  <div class="mem-toast__content">
+    <strong>{{ toast()?.titulo }}</strong>
+    <span>{{ toast()?.mensaje }}</span>
+  </div>
+  <button class="mem-toast__close" (click)="cerrarToast()">✕</button>
+</div>
+}

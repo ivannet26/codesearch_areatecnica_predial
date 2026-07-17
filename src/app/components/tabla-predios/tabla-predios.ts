@@ -36,9 +36,15 @@ export class TablaPrediosComponent implements OnInit, OnDestroy {
 
   // ─── COLUMNAS ────────────────────────────────────────────────────────────────
   columnas = computed(() => {
-    const lista = this.datos();
-    return lista.length > 0 ? Object.keys(lista[0]) : [];
-  });
+  const lista = this.datos();
+  if (lista.length === 0) return [];
+  
+  const ocultas = ['CODIFICACIÓN 04/04/26', 'TIPO DE POLIGONO', 'TIPO DE POLÍGONO'];
+  
+  return Object.keys(lista[0]).filter(col => 
+    !ocultas.some(oc => col.trim().toUpperCase() === oc.toUpperCase())
+  );
+});
 
   // ─── FILTRO ──────────────────────────────────────────────────────────────────
   datosFiltrados = computed(() => {
